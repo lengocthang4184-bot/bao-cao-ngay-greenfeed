@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Báo cáo ngày - GreenFeed</title>
+<style>
+  :root {
+    --gf-green: #00843D;
+    --gf-green-dark: #00612d;
+    --gf-green-light: #e6f4ec;
+    --gf-blue: #0072ce;
+    --bg: #f4f6f5;
+    --card-bg: #ffffff;
+    --text: #1a1f1c;
+    --text-muted: #6b7570;
+    --border: #e1e6e3;
+    --danger: #c62828;
+    --warn: #b8860b;
+    --ok: #00843D;
+  }
+  html { height: 100%; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100%;
+    padding-bottom: 24px;
+  }
+  header {
+    background: linear-gradient(135deg, var(--gf-green), var(--gf-green-dark));
+    color: #fff;
+    padding: 16px 16px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+  header .sub { font-size: 12px; opacity: 0.85; margin-top: 2px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  header .sub button { background: rgba(255,255,255,0.18); border: none; color: #fff; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; cursor: pointer; }
+  nav.tabs { display: flex; gap: 6px; padding: 10px 12px 0; overflow-x: auto; }
+  nav.tabs button {
+    background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 14px;
+    border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  }
+  nav.tabs button.active { background: #fff; color: var(--gf-green-dark); }
+  main { max-width: 720px; margin: 0 auto; padding: 14px 12px 40px; }
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .card h2 { margin: 0 0 10px; font-size: 15px; font-weight: 700; }
+  .card h3 { margin: 14px 0 8px; font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.02em; }
+  label { display: block; font-size: 12.5px; font-weight: 600; margin: 10px 0 4px; color: var(--text-muted); }
+  input[type=text], input[type=number], input[type=date], select, textarea {
+    width: 100%; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); font-size: 14px;
+  }
+  textarea { min-height: 60px; resize: vertical; }
+  .btn {
+    display: inline-block; background: var(--gf-green); color: #fff; border: none; padding: 10px 16px;
+    border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px;
+  }
+  .btn.secondary { background: var(--bg); color: var(--gf-green-dark); border: 1px solid var(--border); }
+  .btn.danger { background: var(--danger); }
+  .btn.small { padding: 6px 10px; font-size: 12.5px; margin-top: 0; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 120px; }
+  .banner { background: var(--gf-green-light); border: 1px solid var(--gf-green); color: var(--gf-green-dark); padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 10px; }
+  .banner.warn { background: #fff8e1; border-color: var(--warn); color: #7a5b00; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+  .badge.done { background: #e3f5e9; color: #0a7a34; }
+  .badge.progress { background: #fff3d6; color: #9a6a00; }
+  .badge.notdone { background: #fde3e3; color: #a91e1e; }
+  .badge.pending { background: #eceff1; color: #52606a; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
+  table.entries-table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 12.5px; }
+  table.entries-table th { background: var(--gf-green); color: #fff; padding: 8px 6px; text-align: left; font-size: 11.5px; font-weight: 700; position: sticky; top: 0; }
+  table.entries-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.entries-table tr:nth-child(even) td { background: rgba(0,132,61,0.04); }
+  table.entries-table .stt { width: 24px; color: var(--text-muted); text-align: center; }
+  table.entries-table .content-cell b { display:block; font-size: 12.5px; }
+  table.entries-table .content-cell .cmeta { color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
+  table.entries-table .status-cell { min-width: 108px; }
+  table.entries-table .icon-row { display: flex; gap: 4px; margin-top: 5px; }
+  table.entries-table .icon-btn { border: 1px solid var(--border); background: var(--bg); border-radius: 6px; font-size: 13px; padding: 3px 6px; cursor: pointer; line-height: 1; }
+  table.entries-table .icon-btn.on-done { border-color: var(--ok); background: var(--gf-green-light); }
+  table.entries-table .icon-btn.on-progress { border-color: var(--warn); background: #fff8e1; }
+  table.entries-table .icon-btn.on-notdone { border-color: var(--danger); background: #fdeaea; }
+  table.entries-table .result-cell { width: 140px; font-size: 11.5px; color: var(--text-muted); white-space: normal; }
+  table.entries-table .del-cell { width: 28px; text-align: center; }
+  table.entries-table .del-cell a { color: var(--danger); font-size: 15px; cursor: pointer; }
+  table.entries-table .inline-form-row td { background: var(--gf-green-light) !important; }
+  .inline-form { border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 8px; }
+  .inline-form .row { margin-bottom: 6px; }
+  .entry { border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 13.5px; }
+  .entry .top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .entry .meta { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .stat { background: var(--gf-green-light); border-radius: 10px; padding: 10px 8px; text-align: center; }
+  .stat .num { font-size: 18px; font-weight: 800; color: var(--gf-green-dark); }
+  .stat .label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .metric { border: 1px solid var(--border); border-radius: 10px; padding: 8px; text-align: center; }
+  .metric .num { font-size: 15px; font-weight: 700; }
+  .metric .label { font-size: 10.5px; color: var(--text-muted); }
+  details.sub-block { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; overflow: hidden; }
+  details.sub-block > summary { list-style: none; cursor: pointer; padding: 12px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; }
+  details.sub-block > summary::-webkit-details-marker { display: none; }
+  details.sub-block .body { padding: 0 12px 12px; }
+  details.sales-block { border-top: 1px solid var(--border); }
+  details.sales-block > summary { list-style: none; cursor: pointer; padding: 9px 4px; display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+  details.sales-block > summary::-webkit-details-marker { display: none; }
+  .empty { color: var(--text-muted); font-size: 13px; text-align: center; padding: 18px 0; }
+  .search-hit { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+  .search-hit:last-child { border-bottom: none; }
+  .pill-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .pill { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .pill button { border: none; background: none; color: var(--danger); cursor: pointer; font-weight: 700; }
+  #chartWrap { position: relative; height: 220px; margin-top: 8px; }
+  .muted { color: var(--text-muted); font-size: 12px; }
+  #loginScreen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height: 80vh; text-align:center; padding: 24px; }
+  #loginScreen h1 { font-size: 20px; margin-bottom: 6px; }
+  #loginScreen p { color: var(--text-muted); font-size: 13.5px; margin-bottom: 20px; }
+  #googleSignInBtn { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--border); border-radius: 10px; padding: 10px 20px; font-size: 14px; font-weight:600; cursor:pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+</style>
+</head>
+<body>
+<div id="loginScreen">
+  <h1>📊 Báo cáo công việc ngày</h1>
+  <p>Đăng nhập bằng tài khoản Google công ty để nộp và xem báo cáo.</p>
+  <button id="googleSignInBtn">Đăng nhập với Google</button>
+  <p id="loginError" style="color:#c62828;margin-top:14px;font-size:13px;"></p>
+</div>
+
+<div id="appRoot" style="display:none">
+<header>
+  <h1>📊 Báo cáo công việc ngày</h1>
+  <div class="sub">
+    <span id="roleLine">Đang tải...</span>
+    <button id="logoutBtn">Đăng xuất</button>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="report" class="active">Nộp báo cáo</button>
+    <button data-tab="dashboard">Dashboard</button>
+    <button data-tab="admin" id="adminTabBtn" style="display:none">Quản trị</button>
+  </nav>
+</header>
+<main>
+  <div id="view-report"></div>
+  <div id="view-dashboard" style="display:none"></div>
+  <div id="view-admin" style="display:none"></div>
+</main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
+  query, where
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAzDUMBVG_WoBv3sN6oHheDieBYFxQ9V5M",
+  authDomain: "greenfeed-bao-cao-ngay.firebaseapp.com",
+  projectId: "greenfeed-bao-cao-ngay",
+  storageBucket: "greenfeed-bao-cao-ngay.firebasestorage.app",
+  messagingSenderId: "1017152829039",
+  appId: "1:1017152829039:web:116c2288b5e5a03cae3f9a"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+(function(){
+  "use strict";
+
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function fmtNum(n){ n = Number(n)||0; return n.toLocaleString("vi-VN"); }
+  function fmtDateVN(iso){ var p = iso.split("-"); return p[2]+"/"+p[1]+"/"+p[0]; }
+
+  function showToast(msg, isError){
+    var t = document.createElement("div");
+    t.textContent = msg;
+    t.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:"+(isError?"#c62828":"#00612d")+";color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:999;max-width:90%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.25)";
+    document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 2800);
+  }
+
+  function armConfirm(el, onConfirm, confirmText){
+    if (el.dataset.armed === "1"){
+      el.dataset.armed = "0";
+      onConfirm();
+      return;
+    }
+    el.dataset.armed = "1";
+    var prevText = el.textContent;
+    var prevColor = el.style.color;
+    el.textContent = confirmText || "Bấm lần nữa để xác nhận";
+    el.style.color = "#c62828";
+    el.style.fontWeight = "700";
+    setTimeout(function(){
+      if (el.dataset.armed === "1"){
+        el.dataset.armed = "0";
+        el.textContent = prevText;
+        el.style.color = prevColor;
+        el.style.fontWeight = "";
+      }
+    }, 3000);
+  }
+
+  var STATUS = {
+    pending: {label: "Chưa cập nhật", cls: "pending"},
+    done: {label: "Hoàn thành", cls: "done"},
+    progress: {label: "Đang tiến hành", cls: "progress"},
+    notdone: {label: "Chưa hoàn thành", cls: "notdone"}
+  };
+
+  var state = {
+    myId: null, myName: "", myEmail: "",
+    isAdmin: false,
+    subs: {}, categories: {}, team: {}, allUsers: {},
+    myAssignment: null,
+    currentTab: "report",
+    reportDate: todayStr(),
+    dashDate: todayStr(),
+    dashMode: "day",
+    rangeFrom: null, rangeTo: null,
+    chart: null,
+    editingRowId: null,
+    editingMode: null
+  };
+
+  function $(id){ return document.getElementById(id); }
+
+  // ---------- AUTH ----------
+  $("googleSignInBtn").addEventListener("click", async function(){
+    $("loginError").textContent = "";
+    try {
+      await signInWithPopup(auth, provider);
+    } catch(e){
+      $("loginError").textContent = "Đăng nhập thất bại: " + (e && e.message ? e.message : "");
+    }
+  });
+  $("logoutBtn").addEventListener("click", function(){ signOut(auth); });
+
+  onAuthStateChanged(auth, async function(user){
+    if (!user){
+      $("loginScreen").style.display = "flex";
+      $("appRoot").style.display = "none";
+      return;
+    }
+    state.myId = user.uid;
+    state.myName = user.displayName || "";
+    state.myEmail = user.email || "";
+
+    try {
+      await setDoc(doc(db, "users", state.myId), {
+        name: state.myName, email: state.myEmail, updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch(e){}
+
+    try {
+      var adminSnap = await getDoc(doc(db, "admins", state.myId));
+      state.isAdmin = adminSnap.exists();
+    } catch(e){ state.isAdmin = false; }
+
+    $("loginScreen").style.display = "none";
+    $("appRoot").style.display = "";
+    $("roleLine").textContent = (state.myName ? "Xin chào, " + state.myName : "Chào bạn") +
+      (state.isAdmin ? " · Quản trị viên" : " · Nhân viên");
+    if (state.isAdmin) $("adminTabBtn").style.display = "";
+
+    setupTabs();
+    await loadStructure();
+    renderReportView();
+    renderDashboardView();
+    renderAdminView();
+  });
+
+  function setupTabs(){
+    document.querySelectorAll("#tabs button").forEach(function(btn){
+      btn.onclick = function(){
+        document.querySelectorAll("#tabs button").forEach(function(b){ b.classList.remove("active"); });
+        btn.classList.add("active");
+        state.currentTab = btn.dataset.tab;
+        $("view-report").style.display = state.currentTab === "report" ? "" : "none";
+        $("view-dashboard").style.display = state.currentTab === "dashboard" ? "" : "none";
+        $("view-admin").style.display = state.currentTab === "admin" ? "" : "none";
+        if (state.currentTab === "dashboard") refreshDashboard();
+        if (state.currentTab === "report") refreshMyEntries();
+      };
+    });
+  }
+
+  // ---------- structure loading ----------
+  async function loadStructure(){
+    try {
+      var subsSnap = await getDocs(collection(db, "subs"));
+      state.subs = {};
+      subsSnap.forEach(function(d){ state.subs[d.id] = d.data(); });
+    } catch(e){}
+    try {
+      var catSnap = await getDocs(collection(db, "categories"));
+      state.categories = {};
+      catSnap.forEach(function(d){ state.categories[d.id] = d.data(); });
+    } catch(e){}
+    try {
+      var teamSnap = await getDocs(collection(db, "team"));
+      state.team = {};
+      teamSnap.forEach(function(d){ state.team[d.id] = d.data(); });
+      if (state.myId && state.team[state.myId]) state.myAssignment = state.team[state.myId];
+    } catch(e){}
+    if (state.isAdmin){
+      try {
+        var usersSnap = await getDocs(collection(db, "users"));
+        state.allUsers = {};
+        usersSnap.forEach(function(d){ state.allUsers[d.id] = d.data(); });
+      } catch(e){}
+    }
+  }
+
+  // ================= TAB 1: NỘP BÁO CÁO =================
+  function renderReportView(){
+    var catOptions = Object.keys(state.categories).map(function(id){
+      return '<option value="'+esc(id)+'">'+esc(state.categories[id].name)+'</option>';
+    }).join("");
+    if (!catOptions) catOptions = '<option value="">(chưa có danh mục - liên hệ quản trị)</option>';
+
+    var assignBanner;
+    if (state.myAssignment){
+      assignBanner = '<div class="banner">Bạn thuộc Sub: <b>'+esc(state.myAssignment.subName)+'</b></div>';
+    } else {
+      assignBanner = '<div class="banner warn">Bạn chưa được gán vào Sub nào. Báo cáo vẫn ghi nhận nhưng sẽ không xuất hiện đúng vị trí trên Dashboard cho tới khi quản trị gán bạn vào 1 Sub.</div>';
+    }
+
+    $("view-report").innerHTML =
+      '<div class="card">' +
+        '<h2>Kế hoạch / thêm đầu việc</h2>' +
+        assignBanner +
+        '<label>Ngày</label>' +
+        '<input type="date" id="rDate" value="'+state.reportDate+'">' +
+        '<label>Loại đầu việc</label>' +
+        '<select id="rCat">'+catOptions+'</select>' +
+        '<label>Khách hàng / đối tượng</label>' +
+        '<input type="text" id="rCustomer" placeholder="Tên trại, khách hàng...">' +
+        '<label>Ghi chú (tùy chọn)</label>' +
+        '<textarea id="rDesc" placeholder="Nội dung dự kiến làm..."></textarea>' +
+        '<button class="btn" id="rSubmit">+ Thêm vào bảng (chưa cần chọn trạng thái)</button>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h2>Bảng đầu việc - <span id="rDateLabel">'+fmtDateVN(state.reportDate)+'</span></h2>' +
+        '<div id="reminderBanner"></div>' +
+        '<div id="myEntries"><div class="empty">Đang tải...</div></div>' +
+      '</div>';
+
+    $("rDate").addEventListener("change", function(e){
+      state.reportDate = e.target.value;
+      $("rDateLabel").textContent = fmtDateVN(state.reportDate);
+      refreshMyEntries();
+    });
+    $("rSubmit").addEventListener("click", submitReport);
+    refreshMyEntries();
+  }
+
+  async function submitReport(){
+    if (!state.myId){ showToast("Không xác định được danh tính của bạn.", true); return; }
+    var catId = $("rCat").value;
+    if (!catId){ showToast("Vui lòng chọn loại đầu việc (hoặc nhờ quản trị tạo danh mục).", true); return; }
+    var desc = $("rDesc").value.trim();
+    var customer = $("rCustomer").value.trim();
+    if (!desc && !customer){ showToast("Nhập ít nhất khách hàng hoặc ghi chú công việc.", true); return; }
+    var btn = $("rSubmit");
+    btn.disabled = true; btn.textContent = "Đang lưu...";
+    try {
+      var assign = state.team[state.myId] || null;
+      await addDoc(collection(db, "reports"), {
+        userId: state.myId,
+        subId: assign ? assign.subId : null,
+        subName: assign ? assign.subName : null,
+        date: $("rDate").value || todayStr(),
+        categoryId: catId,
+        categoryName: (state.categories[catId] || {}).name || "",
+        customer: customer,
+        description: desc,
+        status: "pending",
+        reasonNotDone: "",
+        sanLuong: 0, doanhThu: 0, conGiong: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      $("rCustomer").value = ""; $("rDesc").value = "";
+      await refreshMyEntries();
+    } catch(e){
+      showToast("Lưu thất bại: " + (e && e.message ? e.message : "lỗi không xác định"), true);
+    }
+    btn.disabled = false; btn.textContent = "+ Thêm vào bảng (chưa cần chọn trạng thái)";
+  }
+
+  async function refreshMyEntries(){
+    var box = $("myEntries");
+    var bannerBox = $("reminderBanner");
+    if (!box) return;
+    if (!state.myId){ box.innerHTML = '<div class="empty">Không xác định được danh tính.</div>'; return; }
+    box.innerHTML = '<div class="empty">Đang tải...</div>';
+    try {
+      var q = query(collection(db, "reports"), where("userId","==",state.myId), where("date","==",state.reportDate));
+      var snap = await getDocs(q);
+      if (snap.empty){
+        box.innerHTML = '<div class="empty">Chưa có đầu việc nào trong ngày này.</div>';
+        if (bannerBox) bannerBox.innerHTML = "";
+        return;
+      }
+      var docs = [];
+      snap.forEach(function(d){ docs.push({ id: d.id, data: d.data() }); });
+      var pendingCount = docs.filter(function(d){ return d.data.status === "pending"; }).length;
+
+      if (bannerBox){
+        var now = new Date();
+        var isToday = state.reportDate === todayStr();
+        var isPast = state.reportDate < todayStr();
+        var lateToday = isToday && now.getHours() >= 17;
+        if (pendingCount > 0 && (isPast || lateToday)){
+          bannerBox.innerHTML = '<div class="banner warn">⏰ Còn <b>'+pendingCount+'</b> đầu việc chưa cập nhật kết quả'+(isPast?" (ngày "+fmtDateVN(state.reportDate)+")":" - đã cuối ngày, cập nhật ngay để Dashboard chính xác!")+'</div>';
+        } else {
+          bannerBox.innerHTML = "";
+        }
+      }
+
+      var html = '<div class="table-wrap"><table class="entries-table"><thead><tr>' +
+        '<th>#</th><th>Nội dung</th><th>Trạng thái</th><th>Kết quả</th><th></th>' +
+        '</tr></thead><tbody>';
+      docs.forEach(function(item, idx){
+        var d = item.id, r = item.data;
+        var st = STATUS[r.status] || STATUS.pending;
+        var isEditing = state.editingRowId === d;
+        var resultText = "-";
+        if (r.status === "done"){
+          var parts = [];
+          if (r.resultDescription) parts.push(esc(r.resultDescription));
+          var nums = [];
+          if (r.sanLuong) nums.push(fmtNum(r.sanLuong)+" tấn");
+          if (r.doanhThu) nums.push(fmtNum(r.doanhThu)+" tr");
+          if (r.conGiong) nums.push(fmtNum(r.conGiong)+" con");
+          if (nums.length) parts.push(nums.join(" · "));
+          resultText = parts.length ? parts.join("<br>") : "Xong";
+        } else if (r.status === "notdone" && r.reasonNotDone){
+          resultText = "Lý do: " + esc(r.reasonNotDone);
+        }
+        html += '<tr>' +
+          '<td class="stt">'+(idx+1)+'</td>' +
+          '<td class="content-cell">' +
+            '<b>'+esc(r.categoryName||"")+'</b>' +
+            (r.customer ? '<div class="cmeta">'+esc(r.customer)+'</div>' : "") +
+            (r.description ? '<div class="cmeta">'+esc(r.description)+'</div>' : "") +
+          '</td>' +
+          '<td class="status-cell">' +
+            '<span class="badge '+st.cls+'">'+st.label+'</span>' +
+            '<div class="icon-row">' +
+              '<button class="icon-btn tickDone'+(r.status==="done"?" on-done":"")+'" title="Hoàn thành" data-id="'+esc(d)+'">✅</button>' +
+              '<button class="icon-btn tickProgress'+(r.status==="progress"?" on-progress":"")+'" title="Đang làm" data-id="'+esc(d)+'">🔄</button>' +
+              '<button class="icon-btn tickNotdone'+(r.status==="notdone"?" on-notdone":"")+'" title="Chưa xong" data-id="'+esc(d)+'">❌</button>' +
+            '</div>' +
+          '</td>' +
+          '<td class="result-cell">'+resultText+'</td>' +
+          '<td class="del-cell"><a data-del="'+esc(d)+'" title="Xóa">✕</a></td>' +
+        '</tr>';
+        if (isEditing){
+          html += '<tr class="inline-form-row"><td colspan="5">' + renderInlineForm(d, r) + '</td></tr>';
+        }
+      });
+      html += '</tbody></table></div>';
+      box.innerHTML = html;
+
+      box.querySelectorAll(".tickDone").forEach(function(b){ b.addEventListener("click", function(){ openInlineForm(b.dataset.id, "done"); }); });
+      box.querySelectorAll(".tickProgress").forEach(function(b){ b.addEventListener("click", function(){ setStatus(b.dataset.id, "progress", {}); }); });
+      box.querySelectorAll(".tickNotdone").forEach(function(b){ b.addEventListener("click", function(){ openInlineForm(b.dataset.id, "notdone"); }); });
+      box.querySelectorAll("a[data-del]").forEach(function(a){
+        a.addEventListener("click", function(){
+          armConfirm(a, async function(){
+            await deleteDoc(doc(db, "reports", a.dataset.del));
+            refreshMyEntries();
+          }, "Bấm lần nữa để xóa");
+        });
+      });
+      wireInlineForm(box);
+    } catch(e){
+      box.innerHTML = '<div class="empty">Lỗi tải dữ liệu: '+esc(e.message||"")+'</div>';
+    }
+  }
+
+  function renderInlineForm(id, r){
+    if (state.editingMode === "done"){
+      return '<div class="inline-form" data-form-id="'+esc(id)+'">' +
+        '<label>Mô tả kết quả công việc (bắt buộc)</label>' +
+        '<textarea class="fResult" placeholder="VD: đã chốt đơn 2 tấn, khách đồng ý dùng thử...">'+esc(r.resultDescription||"")+'</textarea>' +
+        '<div class="row">' +
+          '<div><label>Sản lượng (tấn)</label><input type="number" step="0.01" class="fSl" placeholder="0" value="'+ (r.sanLuong||"") +'"></div>' +
+          '<div><label>Doanh thu (triệu đ)</label><input type="number" step="0.1" class="fDt" placeholder="0" value="'+ (r.doanhThu||"") +'"></div>' +
+          '<div><label>Con giống (con)</label><input type="number" step="1" class="fCg" placeholder="0" value="'+ (r.conGiong||"") +'"></div>' +
+        '</div>' +
+        '<button class="btn small confirmBtn" data-id="'+esc(id)+'" data-mode="done">Xác nhận hoàn thành</button> ' +
+        '<button class="btn small secondary cancelBtn">Hủy</button>' +
+      '</div>';
+    }
+    return '<div class="inline-form" data-form-id="'+esc(id)+'">' +
+      '<label>Lý do chưa hoàn thành (bắt buộc)</label>' +
+      '<textarea class="fReason" placeholder="VD: khách bận, thiếu hàng, hoãn lịch...">'+esc(r.reasonNotDone||"")+'</textarea>' +
+      '<button class="btn small danger confirmBtn" data-id="'+esc(id)+'" data-mode="notdone">Xác nhận chưa hoàn thành</button> ' +
+      '<button class="btn small secondary cancelBtn">Hủy</button>' +
+    '</div>';
+  }
+
+  function openInlineForm(id, mode){ state.editingRowId = id; state.editingMode = mode; refreshMyEntries(); }
+
+  function wireInlineForm(box){
+    var form = box.querySelector(".inline-form");
+    if (!form) return;
+    var cancelBtn = form.querySelector(".cancelBtn");
+    if (cancelBtn) cancelBtn.addEventListener("click", function(){ state.editingRowId = null; state.editingMode = null; refreshMyEntries(); });
+    var confirmBtn = form.querySelector(".confirmBtn");
+    if (confirmBtn) confirmBtn.addEventListener("click", async function(){
+      var id = confirmBtn.dataset.id;
+      var mode = confirmBtn.dataset.mode;
+      if (mode === "done"){
+        var resultDesc = form.querySelector(".fResult").value.trim();
+        if (!resultDesc){ showToast("Vui lòng nhập mô tả kết quả công việc.", true); return; }
+        var sl = Number(form.querySelector(".fSl").value) || 0;
+        var dt = Number(form.querySelector(".fDt").value) || 0;
+        var cg = Number(form.querySelector(".fCg").value) || 0;
+        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg });
+      } else {
+        var reason = form.querySelector(".fReason").value.trim();
+        if (!reason){ showToast("Vui lòng nhập lý do chưa hoàn thành.", true); return; }
+        await setStatus(id, "notdone", { reasonNotDone: reason });
+      }
+    });
+  }
+
+  async function setStatus(id, status, extra){
+    try {
+      var payload = Object.assign({ status: status, updatedAt: new Date().toISOString() }, extra || {});
+      if (status !== "notdone") payload.reasonNotDone = "";
+      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; }
+      await updateDoc(doc(db, "reports", id), payload);
+      state.editingRowId = null; state.editingMode = null;
+      refreshMyEntries();
+    } catch(e){
+      showToast("Cập nhật thất bại: " + (e && e.message ? e.message : "lỗi không xác định"), true);
+    }
+  }
+
+  // ================= TAB 2: DASHBOARD =================
+  function renderDashboardView(){
+    $("view-dashboard").innerHTML =
+      '<div class="card">' +
+        '<h2>Tổng quan</h2>' +
+        '<div class="row">' +
+          '<button class="btn secondary small" id="modeDay" style="flex:1">Theo ngày</button>' +
+          '<button class="btn secondary small" id="modeRange" style="flex:1">Theo khoảng ngày</button>' +
+        '</div>' +
+        '<div id="dashControls" style="margin-top:10px"></div>' +
+      '</div>' +
+      '<div id="dashResult"></div>';
+    $("modeDay").addEventListener("click", function(){ state.dashMode="day"; renderDashControls(); refreshDashboard(); });
+    $("modeRange").addEventListener("click", function(){ state.dashMode="range"; renderDashControls(); refreshDashboard(); });
+    renderDashControls();
+  }
+
+  function renderDashControls(){
+    var box = $("dashControls");
+    if (state.dashMode === "day"){
+      box.innerHTML = '<label>Chọn ngày</label><input type="date" id="dashDate" value="'+state.dashDate+'">';
+      $("dashDate").addEventListener("change", function(e){ state.dashDate = e.target.value; refreshDashboard(); });
+    } else {
+      if (!state.rangeFrom){
+        var d = new Date(); d.setDate(d.getDate()-6);
+        state.rangeFrom = d.toISOString().slice(0,10);
+        state.rangeTo = todayStr();
+      }
+      box.innerHTML = '<div class="row">' +
+        '<div><label>Từ ngày</label><input type="date" id="dashFrom" value="'+state.rangeFrom+'"></div>' +
+        '<div><label>Đến ngày</label><input type="date" id="dashTo" value="'+state.rangeTo+'"></div>' +
+        '</div>';
+      $("dashFrom").addEventListener("change", function(e){ state.rangeFrom = e.target.value; refreshDashboard(); });
+      $("dashTo").addEventListener("change", function(e){ state.rangeTo = e.target.value; refreshDashboard(); });
+    }
+  }
+
+  async function refreshDashboard(){
+    var box = $("dashResult");
+    box.innerHTML = '<div class="card"><div class="empty">Đang tải dữ liệu...</div></div>';
+    var reports = [];
+    try {
+      if (state.dashMode === "day"){
+        var q = query(collection(db, "reports"), where("date","==",state.dashDate));
+        var snap = await getDocs(q);
+        snap.forEach(function(d){ reports.push(d.data()); });
+      } else {
+        var q2 = query(collection(db, "reports"), where("date",">=",state.rangeFrom), where("date","<=",state.rangeTo));
+        var snap2 = await getDocs(q2);
+        snap2.forEach(function(d){ reports.push(d.data()); });
+      }
+    } catch(e){
+      box.innerHTML = '<div class="card"><div class="empty">Lỗi tải dữ liệu: '+esc(e.message||"")+'</div></div>';
+      return;
+    }
+    if (state.dashMode === "day") renderDayDashboard(reports);
+    else renderRangeDashboard(reports);
+  }
+
+  function summarize(reports){
+    var s = { total: reports.length, done:0, progress:0, notdone:0, pending:0, sanLuong:0, doanhThu:0, conGiong:0 };
+    reports.forEach(function(r){
+      if (r.status === "done") s.done++;
+      else if (r.status === "notdone") s.notdone++;
+      else if (r.status === "pending") s.pending++;
+      else s.progress++;
+      s.sanLuong += Number(r.sanLuong)||0;
+      s.doanhThu += Number(r.doanhThu)||0;
+      s.conGiong += Number(r.conGiong)||0;
+    });
+    return s;
+  }
+
+  function statBlockHtml(s){
+    return '<div class="stat-grid">' +
+      '<div class="stat"><div class="num">'+s.total+'</div><div class="label">Tổng đầu việc</div></div>' +
+      '<div class="stat"><div class="num">'+s.done+'</div><div class="label">Hoàn thành</div></div>' +
+      '<div class="stat"><div class="num">'+s.progress+'</div><div class="label">Đang tiến hành</div></div>' +
+      '</div>' +
+      '<div class="metric-grid">' +
+        '<div class="metric"><div class="num">'+s.notdone+'</div><div class="label">Chưa hoàn thành</div></div>' +
+        '<div class="metric"><div class="num">'+s.pending+'</div><div class="label">Chưa cập nhật</div></div>' +
+        '<div class="metric"><div class="num">'+fmtNum(s.sanLuong)+'</div><div class="label">Sản lượng (tấn)</div></div>' +
+      '</div>' +
+      '<div class="metric-grid">' +
+        '<div class="metric"><div class="num">'+fmtNum(s.doanhThu)+'</div><div class="label">Doanh thu (tr)</div></div>' +
+        '<div class="metric" style="grid-column: span 2"><div class="num">'+fmtNum(s.conGiong)+' con</div><div class="label">Con giống</div></div>' +
+      '</div>';
+  }
+
+  function empName(uid){ return (state.allUsers[uid] && state.allUsers[uid].name) || "Nhân viên"; }
+
+  function renderDayDashboard(reports){
+    var box = $("dashResult");
+    var overall = summarize(reports);
+    var bySub = {};
+    reports.forEach(function(r){
+      var key = r.subId || "__none__";
+      if (!bySub[key]) bySub[key] = { name: r.subName || "Chưa gán Sub", items: [] };
+      bySub[key].items.push(r);
+    });
+
+    var html = '<div class="card"><h2>Toàn vùng - '+fmtDateVN(state.dashDate)+'</h2>' + statBlockHtml(overall) + '</div>';
+    var subKeys = Object.keys(bySub);
+    if (!subKeys.length){
+      html += '<div class="card"><div class="empty">Chưa có báo cáo nào trong ngày này.</div></div>';
+    } else {
+      html += '<div class="card"><h2>Chi tiết theo Sub</h2>';
+      subKeys.forEach(function(key){
+        var sub = bySub[key];
+        var s = summarize(sub.items);
+        var byEmp = {};
+        sub.items.forEach(function(r){
+          var uid = r.userId || "__unknown__";
+          if (!byEmp[uid]) byEmp[uid] = [];
+          byEmp[uid].push(r);
+        });
+        var empHtml = Object.keys(byEmp).map(function(uid){
+          var items = byEmp[uid];
+          var es = summarize(items);
+          var rows = items.map(function(r){
+            var st = STATUS[r.status] || STATUS.pending;
+            return '<div class="entry"><div class="top"><b>'+esc(r.categoryName||"")+'</b><span class="badge '+st.cls+'">'+st.label+'</span></div>' +
+              (r.customer ? '<div>'+esc(r.customer)+'</div>' : "") +
+              (r.description ? '<div class="meta">'+esc(r.description)+'</div>' : "") +
+              (r.status === "done" && r.resultDescription ? '<div class="meta">Kết quả: '+esc(r.resultDescription)+'</div>' : "") +
+              (r.status === "notdone" && r.reasonNotDone ? '<div class="meta">Lý do: '+esc(r.reasonNotDone)+'</div>' : "") + '</div>';
+          }).join("");
+          return '<details class="sales-block"><summary><span>'+esc(empName(uid))+'</span><span>'+es.total+' việc ('+es.done+' xong)</span></summary><div class="body">'+rows+'</div></details>';
+        }).join("");
+        html += '<details class="sub-block"><summary><span>'+esc(sub.name)+'</span>' +
+          '<span class="badge progress">'+s.total+' việc</span></summary>' +
+          '<div class="body">' + statBlockHtml(s) +
+          '<h3 style="margin-top:12px">Theo nhân viên</h3>' + empHtml +
+          '</div></details>';
+      });
+      html += '</div>';
+    }
+    box.innerHTML = html;
+  }
+
+  function renderRangeDashboard(reports){
+    var box = $("dashResult");
+    var overall = summarize(reports);
+    var html = '<div class="card"><h2>Tổng '+fmtDateVN(state.rangeFrom)+' → '+fmtDateVN(state.rangeTo)+'</h2>' +
+      statBlockHtml(overall) +
+      '<h3>Xu hướng đầu việc theo ngày</h3>' +
+      '<div id="chartWrap"><canvas id="trendChart"></canvas></div>' +
+      '</div>';
+
+    var bySub = {};
+    reports.forEach(function(r){
+      var key = r.subId || "__none__";
+      if (!bySub[key]) bySub[key] = { name: r.subName || "Chưa gán Sub", items: [] };
+      bySub[key].items.push(r);
+    });
+    var subKeys = Object.keys(bySub);
+    if (subKeys.length){
+      html += '<div class="card"><h2>So sánh theo Sub</h2>';
+      subKeys.forEach(function(key){
+        var s = summarize(bySub[key].items);
+        html += '<div class="entry"><div class="top"><b>'+esc(bySub[key].name)+'</b><span class="badge progress">'+s.total+' việc</span></div>' +
+          '<div class="meta">Hoàn thành: '+s.done+' · Đang làm: '+s.progress+' · Chưa xong: '+s.notdone+' · Chưa cập nhật: '+s.pending+' · SL: '+fmtNum(s.sanLuong)+' tấn · DT: '+fmtNum(s.doanhThu)+' tr</div></div>';
+      });
+      html += '</div>';
+    }
+    box.innerHTML = html;
+
+    var byDate = {};
+    reports.forEach(function(r){
+      if (!byDate[r.date]) byDate[r.date] = {done:0, progress:0, notdone:0, pending:0};
+      if (r.status === "done") byDate[r.date].done++;
+      else if (r.status === "notdone") byDate[r.date].notdone++;
+      else if (r.status === "pending") byDate[r.date].pending++;
+      else byDate[r.date].progress++;
+    });
+    var dates = [];
+    var cur = new Date(state.rangeFrom+"T00:00:00");
+    var end = new Date(state.rangeTo+"T00:00:00");
+    while (cur <= end){
+      dates.push(cur.getFullYear()+"-"+String(cur.getMonth()+1).padStart(2,"0")+"-"+String(cur.getDate()).padStart(2,"0"));
+      cur.setDate(cur.getDate()+1);
+    }
+    var doneArr = dates.map(function(d){ return (byDate[d]||{}).done||0; });
+    var progArr = dates.map(function(d){ return (byDate[d]||{}).progress||0; });
+    var notArr = dates.map(function(d){ return (byDate[d]||{}).notdone||0; });
+    var pendArr = dates.map(function(d){ return (byDate[d]||{}).pending||0; });
+    var labels = dates.map(fmtDateVN);
+
+    if (state.chart){ state.chart.destroy(); state.chart = null; }
+    if (window.Chart){
+      var ctx = document.getElementById("trendChart");
+      state.chart = new Chart(ctx, {
+        type: "bar",
+        data: { labels: labels, datasets: [
+          { label: "Hoàn thành", data: doneArr, backgroundColor: "#00843D" },
+          { label: "Đang tiến hành", data: progArr, backgroundColor: "#e0a900" },
+          { label: "Chưa hoàn thành", data: notArr, backgroundColor: "#c62828" },
+          { label: "Chưa cập nhật", data: pendArr, backgroundColor: "#8a97a0" }
+        ]},
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision:0 } } },
+          plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } }
+        }
+      });
+    }
+  }
+
+  // ================= TAB 3: QUẢN TRỊ =================
+  function renderAdminView(){
+    if (!state.isAdmin){
+      $("view-admin").innerHTML = '<div class="card"><div class="empty">Chỉ quản trị viên mới truy cập mục này.</div></div>';
+      return;
+    }
+    $("view-admin").innerHTML =
+      '<div class="card">' +
+        '<h2>Nhóm Sub (vùng)</h2>' +
+        '<div id="subList"></div>' +
+        '<div class="row" style="margin-top:8px">' +
+          '<input type="text" id="newSubName" placeholder="Tên Sub mới, VD: Sub Thường Xuân">' +
+          '<button class="btn small" id="addSubBtn" style="flex:0 0 auto">+ Thêm</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h2>Gán nhân viên vào Sub</h2>' +
+        '<p class="muted">Nhân viên phải đăng nhập app ít nhất 1 lần thì mới xuất hiện trong tìm kiếm.</p>' +
+        '<label>Tìm nhân viên (theo tên)</label>' +
+        '<input type="text" id="empSearch" placeholder="Nhập tên...">' +
+        '<div id="empResults"></div>' +
+        '<h3>Đã gán</h3>' +
+        '<div id="teamList"></div>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h2>Loại đầu việc</h2>' +
+        '<div id="catList"></div>' +
+        '<div class="row" style="margin-top:8px">' +
+          '<input type="text" id="newCatName" placeholder="Loại đầu việc mới">' +
+          '<button class="btn small" id="addCatBtn" style="flex:0 0 auto">+ Thêm</button>' +
+        '</div>' +
+        '<button class="btn secondary small" id="seedCatBtn" style="margin-top:10px">Tạo danh mục mặc định</button>' +
+      '</div>';
+
+    $("addSubBtn").addEventListener("click", addSub);
+    $("addCatBtn").addEventListener("click", addCategory);
+    $("seedCatBtn").addEventListener("click", seedCategories);
+    var searchTimer = null;
+    $("empSearch").addEventListener("input", function(e){
+      clearTimeout(searchTimer);
+      var q = e.target.value;
+      searchTimer = setTimeout(function(){ doEmpSearch(q); }, 250);
+    });
+    $("empSearch").addEventListener("focus", function(){ doEmpSearch(""); });
+
+    renderSubList();
+    renderCatList();
+    renderTeamList();
+  }
+
+  function subOptionsHtml(selected){
+    return Object.keys(state.subs).map(function(id){
+      return '<option value="'+esc(id)+'"'+(id===selected?" selected":"")+'>'+esc(state.subs[id].name)+'</option>';
+    }).join("");
+  }
+
+  function renderSubList(){
+    var box = $("subList");
+    var ids = Object.keys(state.subs);
+    if (!ids.length){ box.innerHTML = '<div class="empty">Chưa có Sub nào.</div>'; return; }
+    box.innerHTML = '<div class="pill-list">' + ids.map(function(id){
+      return '<span class="pill">'+esc(state.subs[id].name)+' <button data-id="'+esc(id)+'">×</button></span>';
+    }).join("") + '</div>';
+    box.querySelectorAll("button").forEach(function(b){
+      b.addEventListener("click", function(){
+        armConfirm(b, async function(){
+          await deleteDoc(doc(db, "subs", b.dataset.id));
+          delete state.subs[b.dataset.id];
+          renderSubList(); renderReportView();
+        }, "Chắc?");
+      });
+    });
+  }
+
+  async function addSub(){
+    var name = $("newSubName").value.trim();
+    if (!name) return;
+    var id = "sub_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    await setDoc(doc(db, "subs", id), { name: name });
+    state.subs[id] = { name: name };
+    $("newSubName").value = "";
+    renderSubList(); renderReportView();
+  }
+
+  function renderCatList(){
+    var box = $("catList");
+    var ids = Object.keys(state.categories);
+    if (!ids.length){ box.innerHTML = '<div class="empty">Chưa có danh mục nào.</div>'; return; }
+    box.innerHTML = '<div class="pill-list">' + ids.map(function(id){
+      return '<span class="pill">'+esc(state.categories[id].name)+' <button data-id="'+esc(id)+'">×</button></span>';
+    }).join("") + '</div>';
+    box.querySelectorAll("button").forEach(function(b){
+      b.addEventListener("click", function(){
+        armConfirm(b, async function(){
+          await deleteDoc(doc(db, "categories", b.dataset.id));
+          delete state.categories[b.dataset.id];
+          renderCatList(); renderReportView();
+        }, "Chắc?");
+      });
+    });
+  }
+
+  async function addCategory(){
+    var name = $("newCatName").value.trim();
+    if (!name) return;
+    var id = "cat_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    await setDoc(doc(db, "categories", id), { name: name });
+    state.categories[id] = { name: name };
+    $("newCatName").value = "";
+    renderCatList(); renderReportView();
+  }
+
+  async function seedCategories(){
+    var defaults = ["Thăm khách hàng","Báo giá","Chăm sóc kỹ thuật","Xử lý sự cố/khiếu nại","Thu thập thông tin đối thủ","Khác"];
+    for (var i=0;i<defaults.length;i++){
+      var id = "cat_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6) + i;
+      await setDoc(doc(db, "categories", id), { name: defaults[i] });
+      state.categories[id] = { name: defaults[i] };
+    }
+    renderCatList(); renderReportView();
+  }
+
+  async function doEmpSearch(q){
+    var box = $("empResults");
+    var qn = q.trim().toLowerCase();
+    var uids = Object.keys(state.allUsers).filter(function(uid){
+      var name = (state.allUsers[uid].name || "").toLowerCase();
+      return !qn || name.indexOf(qn) !== -1;
+    });
+    if (!uids.length){ box.innerHTML = q ? '<div class="empty">Không tìm thấy.</div>' : '<div class="empty">Chưa có nhân viên nào đăng nhập app.</div>'; return; }
+    box.innerHTML = uids.map(function(uid){
+      var p = state.allUsers[uid];
+      return '<div class="search-hit">' +
+        '<span>'+esc(p.name || "Không rõ tên")+' <span class="muted">'+esc(p.email||"")+'</span></span>' +
+        '<span style="display:flex;gap:6px">' +
+        '<select data-id="'+esc(uid)+'" class="assignSel"><option value="">Chọn Sub</option>'+subOptionsHtml()+'</select>' +
+        '<button class="btn small assignBtn" data-id="'+esc(uid)+'">Gán</button>' +
+        '</span></div>';
+    }).join("");
+    box.querySelectorAll(".assignBtn").forEach(function(b){
+      b.addEventListener("click", async function(){
+        var sel = box.querySelector('.assignSel[data-id="'+b.dataset.id+'"]');
+        var subId = sel.value;
+        if (!subId){ showToast("Chọn Sub trước khi gán.", true); return; }
+        await setDoc(doc(db, "team", b.dataset.id), { subId: subId, subName: state.subs[subId].name });
+        state.team[b.dataset.id] = { subId: subId, subName: state.subs[subId].name };
+        renderTeamList();
+      });
+    });
+  }
+
+  function renderTeamList(){
+    var box = $("teamList");
+    var uids = Object.keys(state.team);
+    if (!uids.length){ box.innerHTML = '<div class="empty">Chưa gán ai.</div>'; return; }
+    box.innerHTML = uids.map(function(uid){
+      var name = empName(uid);
+      var t = state.team[uid];
+      return '<div class="search-hit"><span>'+esc(name)+' <span class="muted">('+esc(t.subName)+')</span></span>' +
+        '<button class="btn small danger" data-id="'+esc(uid)+'">Bỏ gán</button></div>';
+    }).join("");
+    box.querySelectorAll("button").forEach(function(b){
+      b.addEventListener("click", async function(){
+        await deleteDoc(doc(db, "team", b.dataset.id));
+        delete state.team[b.dataset.id];
+        renderTeamList();
+      });
+    });
+  }
+
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</body>
+</html>
+
