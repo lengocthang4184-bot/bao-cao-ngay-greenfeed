@@ -470,7 +470,7 @@ const provider = new GoogleAuthProvider();
         description: desc,
         status: "pending",
         reasonNotDone: "",
-        sanLuong: 0, doanhThu: 0, conGiong: 0, moMoiType: "", geo: "",
+        sanLuong: 0, doanhThu: 0, conGiong: 0, moMoiType: "", moMoiSoLuong: 0, geo: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -578,18 +578,20 @@ const provider = new GoogleAuthProvider();
         '<textarea class="fResult" placeholder="VD: đã chốt đơn 2 tấn, khách đồng ý dùng thử...">'+esc(r.resultDescription||"")+'</textarea>' +
         '<div class="row">' +
           '<div><label>Nhóm thức ăn</label><select class="fSlType">'+typeOptionsHtml(state.slTypes, r.slType)+'</select></div>' +
-          '<div><label>Sản lượng</label><input type="number" step="0.01" class="fSl" placeholder="0" value="'+ (r.sanLuong||"") +'"></div>' +
+          '<div><label>Sản lượng (tấn)</label><input type="number" step="1" class="fSl" placeholder="0" value="'+ (r.sanLuong||"") +'"></div>' +
         '</div>' +
         '<div class="row">' +
           '<div><label>Nhóm doanh số</label><select class="fDtType">'+typeOptionsHtml(state.dtTypes, r.dtType)+'</select></div>' +
-          '<div><label>Doanh thu (triệu đ)</label><input type="number" step="0.1" class="fDt" placeholder="0" value="'+ (r.doanhThu||"") +'"></div>' +
+          '<div><label>Doanh thu (triệu đồng)</label><input type="number" step="1" class="fDt" placeholder="0" value="'+ (r.doanhThu||"") +'"></div>' +
         '</div>' +
         '<div class="row">' +
           '<div><label>Nhóm con giống</label><select class="fCgType">'+typeOptionsHtml(state.cgTypes, r.cgType)+'</select></div>' +
           '<div><label>Con giống (con)</label><input type="number" step="1" class="fCg" placeholder="0" value="'+ (r.conGiong||"") +'"></div>' +
         '</div>' +
-        '<label>Mở mới <span class="tag">(tùy chọn)</span></label>' +
-        '<select class="fMoMoiType">'+typeOptionsHtml(state.moMoiTypes, r.moMoiType)+'</select>' +
+        '<div class="row">' +
+          '<div><label>Mở mới <span class="tag">(tùy chọn)</span></label><select class="fMoMoiType">'+typeOptionsHtml(state.moMoiTypes, r.moMoiType)+'</select></div>' +
+          '<div><label>Mở mới (hoạt động)</label><input type="number" step="1" class="fMoMoiCount" placeholder="0" value="'+ (r.moMoiSoLuong||"") +'"></div>' +
+        '</div>' +
         '<label>Tọa độ nơi thực hiện <span class="tag">(tùy chọn)</span></label>' +
         '<div class="geo-row">' +
           '<input type="text" class="fGeo" placeholder="VD: 19.807,105.776" value="'+esc(r.geo||"")+'">' +
@@ -641,8 +643,9 @@ const provider = new GoogleAuthProvider();
         var dtType = form.querySelector(".fDtType").value;
         var cgType = form.querySelector(".fCgType").value;
         var moMoiType = form.querySelector(".fMoMoiType").value;
+        var moMoiSoLuong = Number(form.querySelector(".fMoMoiCount").value) || 0;
         var geo = form.querySelector(".fGeo").value.trim();
-        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg, slType: slType, dtType: dtType, cgType: cgType, moMoiType: moMoiType, geo: geo });
+        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg, slType: slType, dtType: dtType, cgType: cgType, moMoiType: moMoiType, moMoiSoLuong: moMoiSoLuong, geo: geo });
       } else {
         var reason = form.querySelector(".fReason").value.trim();
         if (!reason){ showToast("Vui lòng nhập lý do chưa hoàn thành.", true); return; }
@@ -655,7 +658,7 @@ const provider = new GoogleAuthProvider();
     try {
       var payload = Object.assign({ status: status, updatedAt: new Date().toISOString() }, extra || {});
       if (status !== "notdone") payload.reasonNotDone = "";
-      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; payload.slType = ""; payload.dtType = ""; payload.cgType = ""; payload.moMoiType = ""; payload.geo = ""; }
+      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; payload.slType = ""; payload.dtType = ""; payload.cgType = ""; payload.moMoiType = ""; payload.moMoiSoLuong = 0; payload.geo = ""; }
       await updateDoc(doc(db, "reports", id), payload);
       state.editingRowId = null; state.editingMode = null;
       refreshMyEntries();
@@ -733,7 +736,11 @@ const provider = new GoogleAuthProvider();
       s.sanLuong += Number(r.sanLuong)||0;
       s.doanhThu += Number(r.doanhThu)||0;
       s.conGiong += Number(r.conGiong)||0;
-      if (r.moMoiType){ s.moMoiCount++; s.moMoiByType[r.moMoiType] = (s.moMoiByType[r.moMoiType]||0)+1; }
+      if (r.moMoiType){
+        var mmQty = Number(r.moMoiSoLuong)||0;
+        s.moMoiCount += mmQty;
+        s.moMoiByType[r.moMoiType] = (s.moMoiByType[r.moMoiType]||0)+mmQty;
+      }
     });
     return s;
   }
@@ -812,7 +819,7 @@ const provider = new GoogleAuthProvider();
     if (r.sanLuong) parts.push("SL: "+fmtNum(r.sanLuong)+" tấn"+(r.slType?" ("+esc(r.slType)+")":""));
     if (r.doanhThu) parts.push("DT: "+fmtNum(r.doanhThu)+" tr"+(r.dtType?" ("+esc(r.dtType)+")":""));
     if (r.conGiong) parts.push("Con giống: "+fmtNum(r.conGiong)+" con"+(r.cgType?" ("+esc(r.cgType)+")":""));
-    if (r.moMoiType) parts.push("Mở mới: "+esc(r.moMoiType));
+    if (r.moMoiType) parts.push("Mở mới: "+(r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+" hoạt động ":"")+"("+esc(r.moMoiType)+")");
     if (r.geo) parts.push('<a href="https://maps.google.com/?q='+encodeURIComponent(r.geo)+'" target="_blank" rel="noopener">📍 Bản đồ</a>');
     return parts.join(" · ");
   }
