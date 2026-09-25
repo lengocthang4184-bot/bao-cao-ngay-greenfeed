@@ -577,15 +577,15 @@ const provider = new GoogleAuthProvider();
         '<label>Mô tả kết quả công việc (bắt buộc)</label>' +
         '<textarea class="fResult" placeholder="VD: đã chốt đơn 2 tấn, khách đồng ý dùng thử...">'+esc(r.resultDescription||"")+'</textarea>' +
         '<div class="row">' +
-          '<div><label>Loại sản lượng</label><select class="fSlType">'+typeOptionsHtml(state.slTypes, r.slType)+'</select></div>' +
+          '<div><label>Nhóm thức ăn</label><select class="fSlType">'+typeOptionsHtml(state.slTypes, r.slType)+'</select></div>' +
           '<div><label>Sản lượng</label><input type="number" step="0.01" class="fSl" placeholder="0" value="'+ (r.sanLuong||"") +'"></div>' +
         '</div>' +
         '<div class="row">' +
-          '<div><label>Loại doanh số</label><select class="fDtType">'+typeOptionsHtml(state.dtTypes, r.dtType)+'</select></div>' +
+          '<div><label>Nhóm doanh số</label><select class="fDtType">'+typeOptionsHtml(state.dtTypes, r.dtType)+'</select></div>' +
           '<div><label>Doanh thu (triệu đ)</label><input type="number" step="0.1" class="fDt" placeholder="0" value="'+ (r.doanhThu||"") +'"></div>' +
         '</div>' +
         '<div class="row">' +
-          '<div><label>Loại con giống</label><select class="fCgType">'+typeOptionsHtml(state.cgTypes, r.cgType)+'</select></div>' +
+          '<div><label>Nhóm con giống</label><select class="fCgType">'+typeOptionsHtml(state.cgTypes, r.cgType)+'</select></div>' +
           '<div><label>Con giống (con)</label><input type="number" step="1" class="fCg" placeholder="0" value="'+ (r.conGiong||"") +'"></div>' +
         '</div>' +
         '<label>Mở mới <span class="tag">(tùy chọn)</span></label>' +
@@ -972,28 +972,28 @@ const provider = new GoogleAuthProvider();
       '<div class="card">' +
         '<h2>Danh mục Sản lượng / Doanh số / Con giống</h2>' +
         '<p class="muted">Các danh mục này dùng làm lựa chọn khi nhân viên cập nhật kết quả (Hoàn thành) cho 1 đầu việc.</p>' +
-        '<h3>Loại sản lượng</h3>' +
+        '<h3>Nhóm thức ăn</h3>' +
         '<div id="slTypeList"></div>' +
         '<div class="row" style="margin-top:8px">' +
           '<input type="text" id="newSlTypeName" placeholder="VD: SL thức ăn, SL Premix...">' +
           '<button class="btn small" id="addSlTypeBtn" style="flex:0 0 auto">+ Thêm</button>' +
         '</div>' +
         '<button class="btn secondary small" id="seedSlTypeBtn" style="margin-top:10px">Tạo mặc định</button>' +
-        '<h3>Loại doanh số</h3>' +
+        '<h3>Nhóm doanh số</h3>' +
         '<div id="dtTypeList"></div>' +
         '<div class="row" style="margin-top:8px">' +
           '<input type="text" id="newDtTypeName" placeholder="VD: TBCT, SPTY...">' +
           '<button class="btn small" id="addDtTypeBtn" style="flex:0 0 auto">+ Thêm</button>' +
         '</div>' +
         '<button class="btn secondary small" id="seedDtTypeBtn" style="margin-top:10px">Tạo mặc định</button>' +
-        '<h3>Loại con giống / đầu ra</h3>' +
+        '<h3>Nhóm con giống / đầu ra</h3>' +
         '<div id="cgTypeList"></div>' +
         '<div class="row" style="margin-top:8px">' +
           '<input type="text" id="newCgTypeName" placeholder="VD: GF24, Hcs Farm...">' +
           '<button class="btn small" id="addCgTypeBtn" style="flex:0 0 auto">+ Thêm</button>' +
         '</div>' +
         '<button class="btn secondary small" id="seedCgTypeBtn" style="margin-top:10px">Tạo mặc định</button>' +
-        '<h3>Loại mở mới</h3>' +
+        '<h3>Nhóm mở mới</h3>' +
         '<div id="moMoiTypeList"></div>' +
         '<div class="row" style="margin-top:8px">' +
           '<input type="text" id="newMoMoiTypeName" placeholder="VD: Đại lý, Trại trực tiếp, Hộ nuôi...">' +
