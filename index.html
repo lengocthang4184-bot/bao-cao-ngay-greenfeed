@@ -528,7 +528,7 @@ const provider = new GoogleAuthProvider();
           '<td class="stt">'+(idx+1)+'</td>' +
           '<td class="content-cell">' +
             '<b>'+esc(r.categoryName || "")+'</b>' +
-            (r.description ? '<div class="cmeta">'+esc(r.description)+'</div>' : "") +
+            (r.description ? '<div class="cmeta"><b class="k">Mô tả chi tiết:</b>&nbsp;'+esc(r.description)+'</div>' : "") +
             extrasLineHtml(r, "cmeta") +
           '</td>' +
           '<td class="status-cell">' +
@@ -837,7 +837,7 @@ const provider = new GoogleAuthProvider();
             var st = STATUS[r.status] || STATUS.pending;
             var numsHtml = resultNumsHtml(r);
             return '<div class="entry"><div class="top"><b>'+esc(r.categoryName || "")+'</b><span class="badge '+st.cls+'">'+st.label+'</span></div>' +
-              (r.description ? '<div class="meta">Mô tả: '+esc(r.description)+'</div>' : "") +
+              (r.description ? '<div class="meta">Mô tả chi tiết: '+esc(r.description)+'</div>' : "") +
               extrasLineHtml(r, "meta") +
               (r.status === "done" && r.resultDescription ? '<div class="meta">Kết quả: '+esc(r.resultDescription)+'</div>' : "") +
               (numsHtml ? '<div class="meta">'+numsHtml+'</div>' : "") +
