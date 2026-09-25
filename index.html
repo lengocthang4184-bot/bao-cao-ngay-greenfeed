@@ -242,6 +242,7 @@ const provider = new GoogleAuthProvider();
     myId: null, myName: "", myEmail: "",
     isAdmin: false,
     subs: {}, categories: {}, team: {}, allUsers: {},
+    slTypes: {}, dtTypes: {}, cgTypes: {},
     myAssignment: null,
     currentTab: "report",
     reportDate: todayStr(),
@@ -335,6 +336,21 @@ const provider = new GoogleAuthProvider();
       teamSnap.forEach(function(d){ state.team[d.id] = d.data(); });
       if (state.myId && state.team[state.myId]) state.myAssignment = state.team[state.myId];
     } catch(e){}
+    try {
+      var slSnap = await getDocs(collection(db, "slTypes"));
+      state.slTypes = {};
+      slSnap.forEach(function(d){ state.slTypes[d.id] = d.data(); });
+    } catch(e){}
+    try {
+      var dtSnap = await getDocs(collection(db, "dtTypes"));
+      state.dtTypes = {};
+      dtSnap.forEach(function(d){ state.dtTypes[d.id] = d.data(); });
+    } catch(e){}
+    try {
+      var cgSnap = await getDocs(collection(db, "cgTypes"));
+      state.cgTypes = {};
+      cgSnap.forEach(function(d){ state.cgTypes[d.id] = d.data(); });
+    } catch(e){}
     if (state.isAdmin){
       try {
         var usersSnap = await getDocs(collection(db, "users"));
@@ -366,8 +382,8 @@ const provider = new GoogleAuthProvider();
         '<input type="date" id="rDate" value="'+state.reportDate+'">' +
         '<label>Loại đầu việc</label>' +
         '<select id="rCat">'+catOptions+'</select>' +
-        '<label>Việc gì</label>' +
-        '<textarea id="rDesc" placeholder="Nội dung chính của đầu việc..."></textarea>' +
+        '<label>Mô tả chi tiết</label>' +
+        '<textarea id="rDesc" placeholder="Mô tả chi tiết đầu việc (khách hàng, nội dung cụ thể...)"></textarea>' +
         '<div class="toggle-more" id="toggleMore">+ Thêm chi tiết (Với ai / Ở đâu / Tại sao) <span id="toggleIcon">▼</span></div>' +
         '<div class="more-box" id="moreBox">' +
           '<label style="margin-top:0;">Với ai <span class="tag">(tùy chọn)</span></label>' +
@@ -407,7 +423,7 @@ const provider = new GoogleAuthProvider();
     var customer = $("rCustomer").value.trim();
     var where = $("rWhere").value.trim();
     var why = $("rWhy").value.trim();
-    if (!desc){ showToast("Vui lòng nhập Việc gì.", true); return; }
+    if (!desc){ showToast("Vui lòng nhập mô tả chi tiết.", true); return; }
     var btn = $("rSubmit");
     btn.disabled = true; btn.textContent = "Đang lưu...";
     try {
@@ -478,11 +494,8 @@ const provider = new GoogleAuthProvider();
         if (r.status === "done"){
           var parts = [];
           if (r.resultDescription) parts.push(esc(r.resultDescription));
-          var nums = [];
-          if (r.sanLuong) nums.push(fmtNum(r.sanLuong)+" tấn");
-          if (r.doanhThu) nums.push(fmtNum(r.doanhThu)+" tr");
-          if (r.conGiong) nums.push(fmtNum(r.conGiong)+" con");
-          if (nums.length) parts.push(nums.join(" · "));
+          var numsStr = resultNumsHtml(r);
+          if (numsStr) parts.push(numsStr);
           resultText = parts.length ? parts.join("<br>") : "Xong";
         } else if (r.status === "notdone" && r.reasonNotDone){
           resultText = "Lý do: " + esc(r.reasonNotDone);
@@ -490,8 +503,8 @@ const provider = new GoogleAuthProvider();
         html += '<tr>' +
           '<td class="stt">'+(idx+1)+'</td>' +
           '<td class="content-cell">' +
-            '<b>'+esc(r.description || r.categoryName || "")+'</b>' +
-            '<div class="cmeta"><b class="k">Loại:</b> '+esc(r.categoryName||"")+'</div>' +
+            '<b>'+esc(r.categoryName || "")+'</b>' +
+            (r.description ? '<div class="cmeta"><b class="k">Mô tả:</b> '+esc(r.description)+'</div>' : "") +
             (r.customer ? '<div class="cmeta"><b class="k">Với ai:</b> '+esc(r.customer)+'</div>' : "") +
             (r.location ? '<div class="cmeta"><b class="k">Ở đâu:</b> '+esc(r.location)+'</div>' : "") +
             (r.why ? '<div class="cmeta"><b class="k">Tại sao:</b> '+esc(r.why)+'</div>' : "") +
@@ -537,8 +550,15 @@ const provider = new GoogleAuthProvider();
         '<label>Mô tả kết quả công việc (bắt buộc)</label>' +
         '<textarea class="fResult" placeholder="VD: đã chốt đơn 2 tấn, khách đồng ý dùng thử...">'+esc(r.resultDescription||"")+'</textarea>' +
         '<div class="row">' +
-          '<div><label>Sản lượng (tấn)</label><input type="number" step="0.01" class="fSl" placeholder="0" value="'+ (r.sanLuong||"") +'"></div>' +
+          '<div><label>Loại sản lượng</label><select class="fSlType">'+typeOptionsHtml(state.slTypes, r.slType)+'</select></div>' +
+          '<div><label>Sản lượng</label><input type="number" step="0.01" class="fSl" placeholder="0" value="'+ (r.sanLuong||"") +'"></div>' +
+        '</div>' +
+        '<div class="row">' +
+          '<div><label>Loại doanh số</label><select class="fDtType">'+typeOptionsHtml(state.dtTypes, r.dtType)+'</select></div>' +
           '<div><label>Doanh thu (triệu đ)</label><input type="number" step="0.1" class="fDt" placeholder="0" value="'+ (r.doanhThu||"") +'"></div>' +
+        '</div>' +
+        '<div class="row">' +
+          '<div><label>Loại con giống</label><select class="fCgType">'+typeOptionsHtml(state.cgTypes, r.cgType)+'</select></div>' +
           '<div><label>Con giống (con)</label><input type="number" step="1" class="fCg" placeholder="0" value="'+ (r.conGiong||"") +'"></div>' +
         '</div>' +
         '<button class="btn small confirmBtn" data-id="'+esc(id)+'" data-mode="done">Xác nhận hoàn thành</button> ' +
@@ -570,7 +590,10 @@ const provider = new GoogleAuthProvider();
         var sl = Number(form.querySelector(".fSl").value) || 0;
         var dt = Number(form.querySelector(".fDt").value) || 0;
         var cg = Number(form.querySelector(".fCg").value) || 0;
-        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg });
+        var slType = form.querySelector(".fSlType").value;
+        var dtType = form.querySelector(".fDtType").value;
+        var cgType = form.querySelector(".fCgType").value;
+        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg, slType: slType, dtType: dtType, cgType: cgType });
       } else {
         var reason = form.querySelector(".fReason").value.trim();
         if (!reason){ showToast("Vui lòng nhập lý do chưa hoàn thành.", true); return; }
@@ -583,7 +606,7 @@ const provider = new GoogleAuthProvider();
     try {
       var payload = Object.assign({ status: status, updatedAt: new Date().toISOString() }, extra || {});
       if (status !== "notdone") payload.reasonNotDone = "";
-      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; }
+      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; payload.slType = ""; payload.dtType = ""; payload.cgType = ""; }
       await updateDoc(doc(db, "reports", id), payload);
       state.editingRowId = null; state.editingMode = null;
       refreshMyEntries();
@@ -684,6 +707,25 @@ const provider = new GoogleAuthProvider();
 
   function empName(uid){ return (state.allUsers[uid] && state.allUsers[uid].name) || "Nhân viên"; }
 
+  function typeOptionsHtml(typesObj, selected){
+    var ids = Object.keys(typesObj);
+    var html = '<option value="">-- Chọn loại --</option>';
+    html += ids.map(function(id){
+      var name = typesObj[id].name;
+      return '<option value="'+esc(name)+'"'+(name===selected?" selected":"")+'>'+esc(name)+'</option>';
+    }).join("");
+    return html;
+  }
+
+  function resultNumsHtml(r){
+    if (r.status !== "done") return "";
+    var parts = [];
+    if (r.sanLuong) parts.push("SL: "+fmtNum(r.sanLuong)+" tấn"+(r.slType?" ("+esc(r.slType)+")":""));
+    if (r.doanhThu) parts.push("DT: "+fmtNum(r.doanhThu)+" tr"+(r.dtType?" ("+esc(r.dtType)+")":""));
+    if (r.conGiong) parts.push("Con giống: "+fmtNum(r.conGiong)+" con"+(r.cgType?" ("+esc(r.cgType)+")":""));
+    return parts.join(" · ");
+  }
+
   function renderDayDashboard(reports){
     var box = $("dashResult");
     var overall = summarize(reports);
@@ -714,12 +756,14 @@ const provider = new GoogleAuthProvider();
           var es = summarize(items);
           var rows = items.map(function(r){
             var st = STATUS[r.status] || STATUS.pending;
-            return '<div class="entry"><div class="top"><b>'+esc(r.description || r.categoryName || "")+'</b><span class="badge '+st.cls+'">'+st.label+'</span></div>' +
-              '<div class="meta">Loại: '+esc(r.categoryName||"")+'</div>' +
+            var numsHtml = resultNumsHtml(r);
+            return '<div class="entry"><div class="top"><b>'+esc(r.categoryName || "")+'</b><span class="badge '+st.cls+'">'+st.label+'</span></div>' +
+              (r.description ? '<div class="meta">Mô tả: '+esc(r.description)+'</div>' : "") +
               (r.customer ? '<div class="meta">Với ai: '+esc(r.customer)+'</div>' : "") +
               (r.location ? '<div class="meta">Ở đâu: '+esc(r.location)+'</div>' : "") +
               (r.why ? '<div class="meta">Tại sao: '+esc(r.why)+'</div>' : "") +
               (r.status === "done" && r.resultDescription ? '<div class="meta">Kết quả: '+esc(r.resultDescription)+'</div>' : "") +
+              (numsHtml ? '<div class="meta">'+numsHtml+'</div>' : "") +
               (r.status === "notdone" && r.reasonNotDone ? '<div class="meta">Lý do: '+esc(r.reasonNotDone)+'</div>' : "") + '</div>';
           }).join("");
           return '<details class="sales-block"><summary><span>'+esc(empName(uid))+'</span><span>'+es.total+' việc ('+es.done+' xong)</span></summary><div class="body">'+rows+'</div></details>';
@@ -835,11 +879,42 @@ const provider = new GoogleAuthProvider();
           '<button class="btn small" id="addCatBtn" style="flex:0 0 auto">+ Thêm</button>' +
         '</div>' +
         '<button class="btn secondary small" id="seedCatBtn" style="margin-top:10px">Tạo danh mục mặc định</button>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h2>Danh mục Sản lượng / Doanh số / Con giống</h2>' +
+        '<p class="muted">Các danh mục này dùng làm lựa chọn khi nhân viên cập nhật kết quả (Hoàn thành) cho 1 đầu việc.</p>' +
+        '<h3>Loại sản lượng</h3>' +
+        '<div id="slTypeList"></div>' +
+        '<div class="row" style="margin-top:8px">' +
+          '<input type="text" id="newSlTypeName" placeholder="VD: SL thức ăn, SL Premix...">' +
+          '<button class="btn small" id="addSlTypeBtn" style="flex:0 0 auto">+ Thêm</button>' +
+        '</div>' +
+        '<button class="btn secondary small" id="seedSlTypeBtn" style="margin-top:10px">Tạo mặc định</button>' +
+        '<h3>Loại doanh số</h3>' +
+        '<div id="dtTypeList"></div>' +
+        '<div class="row" style="margin-top:8px">' +
+          '<input type="text" id="newDtTypeName" placeholder="VD: TBCT, SPTY...">' +
+          '<button class="btn small" id="addDtTypeBtn" style="flex:0 0 auto">+ Thêm</button>' +
+        '</div>' +
+        '<button class="btn secondary small" id="seedDtTypeBtn" style="margin-top:10px">Tạo mặc định</button>' +
+        '<h3>Loại con giống / đầu ra</h3>' +
+        '<div id="cgTypeList"></div>' +
+        '<div class="row" style="margin-top:8px">' +
+          '<input type="text" id="newCgTypeName" placeholder="VD: GF24, Hcs Farm...">' +
+          '<button class="btn small" id="addCgTypeBtn" style="flex:0 0 auto">+ Thêm</button>' +
+        '</div>' +
+        '<button class="btn secondary small" id="seedCgTypeBtn" style="margin-top:10px">Tạo mặc định</button>' +
       '</div>';
 
     $("addSubBtn").addEventListener("click", addSub);
     $("addCatBtn").addEventListener("click", addCategory);
     $("seedCatBtn").addEventListener("click", seedCategories);
+    $("addSlTypeBtn").addEventListener("click", function(){ addGenericType("slTypes","slTypes","newSlTypeName","slTypeList"); });
+    $("seedSlTypeBtn").addEventListener("click", function(){ seedGenericTypes("slTypes","slTypes","slTypeList", ["SL thức ăn","SL Premix"]); });
+    $("addDtTypeBtn").addEventListener("click", function(){ addGenericType("dtTypes","dtTypes","newDtTypeName","dtTypeList"); });
+    $("seedDtTypeBtn").addEventListener("click", function(){ seedGenericTypes("dtTypes","dtTypes","dtTypeList", ["TBCT","SPTY"]); });
+    $("addCgTypeBtn").addEventListener("click", function(){ addGenericType("cgTypes","cgTypes","newCgTypeName","cgTypeList"); });
+    $("seedCgTypeBtn").addEventListener("click", function(){ seedGenericTypes("cgTypes","cgTypes","cgTypeList", ["GF24","Hcs Farm","Hcs LK","Gà giống","Vịt giống","Gà thịt","Vịt thịt","Heo thịt"]); });
     var searchTimer = null;
     $("empSearch").addEventListener("input", function(e){
       clearTimeout(searchTimer);
@@ -851,6 +926,46 @@ const provider = new GoogleAuthProvider();
     renderSubList();
     renderCatList();
     renderTeamList();
+    renderGenericTypeList("slTypes","slTypeList","slTypes");
+    renderGenericTypeList("dtTypes","dtTypeList","dtTypes");
+    renderGenericTypeList("cgTypes","cgTypeList","cgTypes");
+  }
+
+  function renderGenericTypeList(stateKey, boxId, collectionName){
+    var box = $(boxId);
+    var ids = Object.keys(state[stateKey]);
+    if (!ids.length){ box.innerHTML = '<div class="empty">Chưa có mục nào.</div>'; return; }
+    box.innerHTML = '<div class="pill-list">' + ids.map(function(id){
+      return '<span class="pill">'+esc(state[stateKey][id].name)+' <button data-id="'+esc(id)+'">×</button></span>';
+    }).join("") + '</div>';
+    box.querySelectorAll("button").forEach(function(b){
+      b.addEventListener("click", function(){
+        armConfirm(b, async function(){
+          await deleteDoc(doc(db, collectionName, b.dataset.id));
+          delete state[stateKey][b.dataset.id];
+          renderGenericTypeList(stateKey, boxId, collectionName);
+        }, "Chắc?");
+      });
+    });
+  }
+
+  async function addGenericType(stateKey, collectionName, inputId, boxId){
+    var name = $(inputId).value.trim();
+    if (!name) return;
+    var id = collectionName + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    await setDoc(doc(db, collectionName, id), { name: name });
+    state[stateKey][id] = { name: name };
+    $(inputId).value = "";
+    renderGenericTypeList(stateKey, boxId, collectionName);
+  }
+
+  async function seedGenericTypes(stateKey, collectionName, boxId, defaults){
+    for (var i=0;i<defaults.length;i++){
+      var id = collectionName + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6) + i;
+      await setDoc(doc(db, collectionName, id), { name: defaults[i] });
+      state[stateKey][id] = { name: defaults[i] };
+    }
+    renderGenericTypeList(stateKey, boxId, collectionName);
   }
 
   function subOptionsHtml(selected){
