@@ -1594,13 +1594,11 @@ const provider = new GoogleAuthProvider();
   }
 
   // Firebase Cloud Messaging (FCM) - Push notifications
+  let swRegPromise = null;
   function initFCM(){
-    // Register Service Worker
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('firebase-messaging-sw.js').catch(function(err){
-        console.log('Service Worker registration failed:', err);
-      });
-    }
+    if(!('serviceWorker' in navigator)) return;
+    // Register Service Worker (relative path works on GitHub Pages subfolder)
+    swRegPromise = navigator.serviceWorker.register('firebase-messaging-sw.js');
 
     // Request notification permission
     if(Notification.permission === 'default'){
@@ -1616,13 +1614,17 @@ const provider = new GoogleAuthProvider();
   }
 
   function getFCMToken(){
-    const vapidKey = "BAXHLsJy-KTshQdFvHvuV7N0-J3hJ2hKqmYXCXlVJJiZd_0JaU2b3DEv2QFUCdZqSAVCZ3m2wqCJhKLs5YEMr7s";
-    getToken(messaging, { vapidKey: vapidKey }).then(function(currentToken){
+    const vapidKey = "BMRAD3A8cX1NnwCIl_SFrpNhXrsnKT56lAszVLuXrhX6FZHr1empvXn5nlYceolkpPkJCbHFEw86XbBRpGG4fhM";
+    swRegPromise.then(function(reg){
+      return getToken(messaging, { vapidKey: vapidKey, serviceWorkerRegistration: reg });
+    }).then(function(currentToken){
       if(currentToken){
         console.log('FCM Token:', currentToken);
-        // Optionally save token to database for sending notifications
         if(state.myId){
-          setDoc(doc(db, "fcm_tokens", state.myId), { token: currentToken, timestamp: new Date() }, { merge: true });
+          setDoc(doc(db, "fcm_tokens", state.myId), {
+            token: currentToken, name: state.myName || "", email: state.myEmail || "",
+            ua: navigator.userAgent, timestamp: new Date()
+          }, { merge: true }).catch(function(e){ console.log('Save FCM token failed:', e); });
         }
       } else {
         console.log('Unable to get FCM token');
@@ -1638,8 +1640,8 @@ const provider = new GoogleAuthProvider();
     const notificationTitle = payload.notification?.title || 'Thông báo';
     const notificationOptions = {
       body: payload.notification?.body || '',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png'
+      icon: 'icon-192.png',
+      badge: 'icon-192.png'
     };
 
     // Show notification
