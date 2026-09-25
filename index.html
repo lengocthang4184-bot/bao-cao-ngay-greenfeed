@@ -139,6 +139,26 @@
   #googleSignInBtn { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--border); border-radius: 10px; padding: 10px 20px; font-size: 14px; font-weight:600; cursor:pointer; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .gf-logo { height: 26px; vertical-align: middle; margin-right: 8px; background: #fff; border-radius: 6px; padding: 3px 5px; }
   #loginScreen .gf-logo { height: 40px; padding: 5px 7px; margin-right: 0; margin-bottom: 4px; display: block; margin-left: auto; margin-right: auto; }
+  .commentBtn { position: relative; }
+  .cbadge { position: absolute; top: -6px; right: -6px; background: var(--danger); color: #fff; font-size: 9.5px; font-weight: 800; line-height: 1; border-radius: 999px; padding: 2px 4px; min-width: 14px; text-align: center; }
+  .entry .top .commentBtn { border: 1px solid var(--border); background: var(--bg); border-radius: 6px; font-size: 12px; padding: 2px 6px; cursor: pointer; }
+  #commentOverlay { display:none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 998; align-items: flex-end; justify-content: center; }
+  #commentOverlay.open { display: flex; }
+  #commentModal { background: #fff; width: 100%; max-width: 520px; max-height: 80vh; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; box-shadow: 0 -4px 20px rgba(0,0,0,.2); }
+  @media (min-width: 560px){ #commentOverlay { align-items: center; } #commentModal { border-radius: 16px; max-height: 72vh; } }
+  #commentModal .cm-head { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  #commentModal .cm-head b { font-size: 13.5px; }
+  #commentModal .cm-close { border: none; background: none; font-size: 20px; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 2px 6px; }
+  #commentModal .cm-list { flex: 1; overflow-y: auto; padding: 10px 14px; }
+  #commentModal .cm-item { margin-bottom: 10px; }
+  #commentModal .cm-item .cm-row { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 2px; }
+  #commentModal .cm-item .cm-name { font-weight: 700; color: var(--gf-green-dark); }
+  #commentModal .cm-item .cm-text { font-size: 13px; background: var(--gf-green-light); border-radius: 10px; padding: 7px 10px; white-space: pre-wrap; word-break: break-word; }
+  #commentModal .cm-item.mine .cm-text { background: #e8f0fe; }
+  #commentModal .cm-empty { color: var(--text-muted); font-size: 12.5px; text-align: center; padding: 16px 0; }
+  #commentModal .cm-foot { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; gap: 8px; align-items: flex-end; }
+  #commentModal .cm-foot textarea { flex: 1; resize: none; min-height: 38px; max-height: 90px; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+  #commentModal .cm-foot button { border: none; background: var(--gf-green); color: #fff; border-radius: 10px; padding: 0 16px; font-size: 13px; font-weight: 700; cursor: pointer; height: 38px; }
 </style>
 </head>
 <body>
@@ -177,7 +197,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
-  query, where
+  query, where, increment
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -239,6 +259,143 @@ const provider = new GoogleAuthProvider();
     }, 3000);
   }
 
+  // ---------- TRAO ĐỔI / BÌNH LUẬN ----------
+  function commentBtnHtml(reportId, r){
+    var cnt = Number(r.commentCount) || 0;
+    var read = (state.myCommentReads && state.myCommentReads[reportId]) || 0;
+    var unread = Math.max(0, cnt - read);
+    var title = r.categoryName || "";
+    return '<button type="button" class="icon-btn commentBtn" title="Trao đổi" data-id="'+esc(reportId)+'" data-title="'+esc(title)+'">💬' +
+      (unread > 0 ? '<span class="cbadge">'+(unread > 99 ? "99+" : unread)+'</span>' : '') +
+      '</button>';
+  }
+
+  function ensureCommentModal(){
+    if ($("commentOverlay")) return;
+    var ov = document.createElement("div");
+    ov.id = "commentOverlay";
+    ov.innerHTML =
+      '<div id="commentModal">' +
+        '<div class="cm-head"><b id="cmTitle">Trao đổi</b><button type="button" class="cm-close" id="cmCloseBtn">×</button></div>' +
+        '<div class="cm-list" id="cmList"></div>' +
+        '<div class="cm-foot"><textarea id="cmInput" placeholder="Nhập nội dung trao đổi..."></textarea><button type="button" id="cmSendBtn">Gửi</button></div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click", function(e){ if (e.target === ov) closeCommentModal(); });
+    $("cmCloseBtn").addEventListener("click", closeCommentModal);
+    $("cmSendBtn").addEventListener("click", function(){ sendComment(); });
+    $("cmInput").addEventListener("keydown", function(e){
+      if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendComment(); }
+    });
+  }
+
+  function closeCommentModal(){
+    var ov = $("commentOverlay");
+    if (ov) ov.classList.remove("open");
+    state.commentModalReportId = null;
+  }
+
+  async function openCommentModal(reportId, title){
+    if (!reportId) return;
+    ensureCommentModal();
+    state.commentModalReportId = reportId;
+    state.commentModalTitle = title || "";
+    $("commentOverlay").classList.add("open");
+    $("cmTitle").textContent = title ? ("Trao đổi · " + title) : "Trao đổi";
+    $("cmList").innerHTML = '<div class="cm-empty">Đang tải...</div>';
+    $("cmInput").value = "";
+    await loadCommentThread(reportId);
+    // đánh dấu đã đọc
+    try {
+      var rSnap = await getDoc(doc(db, "reports", reportId));
+      var curCount = rSnap.exists() ? (Number(rSnap.data().commentCount)||0) : 0;
+      markCommentsRead(reportId, curCount);
+    } catch(e){}
+  }
+
+  async function loadCommentThread(reportId){
+    var list = $("cmList");
+    if (!list) return;
+    try {
+      var q = query(collection(db, "comments"), where("reportId","==",reportId));
+      var snap = await getDocs(q);
+      var items = [];
+      snap.forEach(function(d){ items.push(d.data()); });
+      items.sort(function(a,b){ return (a.createdAt||"").localeCompare(b.createdAt||""); });
+      renderCommentList(items);
+    } catch(e){
+      list.innerHTML = '<div class="cm-empty">Lỗi tải trao đổi: '+esc(e.message||"")+'</div>';
+    }
+  }
+
+  function renderCommentList(items){
+    var list = $("cmList");
+    if (!list) return;
+    if (!items.length){
+      list.innerHTML = '<div class="cm-empty">Chưa có trao đổi nào. Hãy là người đầu tiên!</div>';
+      return;
+    }
+    list.innerHTML = items.map(function(c){
+      var mine = c.uid === state.myId;
+      var t = "";
+      try { t = new Date(c.createdAt).toLocaleString("vi-VN", {hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"}); } catch(e){}
+      return '<div class="cm-item'+(mine?" mine":"")+'">' +
+        '<div class="cm-row"><span class="cm-name">'+esc(c.name||"Ẩn danh")+'</span><span>'+esc(t)+'</span></div>' +
+        '<div class="cm-text">'+esc(c.text||"")+'</div>' +
+      '</div>';
+    }).join("");
+    list.scrollTop = list.scrollHeight;
+  }
+
+  async function sendComment(){
+    var reportId = state.commentModalReportId;
+    if (!reportId) return;
+    var input = $("cmInput");
+    var text = (input.value || "").trim();
+    if (!text) return;
+    var sendBtn = $("cmSendBtn");
+    sendBtn.disabled = true;
+    try {
+      var createdAt = new Date().toISOString();
+      await addDoc(collection(db, "comments"), {
+        reportId: reportId, uid: state.myId, name: state.myName || state.myEmail || "Ẩn danh",
+        text: text, createdAt: createdAt
+      });
+      await updateDoc(doc(db, "reports", reportId), {
+        commentCount: increment(1), lastCommentAt: createdAt, lastCommentBy: state.myId
+      });
+      input.value = "";
+      await loadCommentThread(reportId);
+      try {
+        var rSnap = await getDoc(doc(db, "reports", reportId));
+        var curCount = rSnap.exists() ? (Number(rSnap.data().commentCount)||0) : 0;
+        markCommentsRead(reportId, curCount);
+      } catch(e){}
+    } catch(e){
+      showToast("Gửi trao đổi thất bại: " + (e && e.message ? e.message : ""), true);
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  function markCommentsRead(reportId, count){
+    if (!state.myCommentReads) state.myCommentReads = {};
+    state.myCommentReads[reportId] = count;
+    document.querySelectorAll('.commentBtn[data-id="'+CSS.escape(reportId)+'"] .cbadge').forEach(function(el){ el.remove(); });
+    try {
+      var upd = {};
+      upd["commentReads." + reportId] = count;
+      updateDoc(doc(db, "users", state.myId), upd).catch(function(){});
+    } catch(e){}
+  }
+
+  document.addEventListener("click", function(e){
+    var btn = e.target.closest && e.target.closest(".commentBtn");
+    if (!btn) return;
+    var title = btn.dataset.title || "";
+    openCommentModal(btn.dataset.id, title);
+  });
+
   var STATUS = {
     pending: {label: "Chưa cập nhật", cls: "pending"},
     done: {label: "Hoàn thành", cls: "done"},
@@ -267,7 +424,10 @@ const provider = new GoogleAuthProvider();
     rangeFrom: null, rangeTo: null,
     chart: null,
     editingRowId: null,
-    editingMode: null
+    editingMode: null,
+    myCommentReads: {},
+    commentModalReportId: null,
+    commentModalTitle: ""
   };
 
   function $(id){ return document.getElementById(id); }
@@ -305,6 +465,12 @@ const provider = new GoogleAuthProvider();
       var adminSnap = await getDoc(doc(db, "admins", state.myId));
       state.isAdmin = adminSnap.exists();
     } catch(e){ state.isAdmin = false; }
+
+    // load own comment-read state
+    try {
+      var meSnap = await getDoc(doc(db, "users", state.myId));
+      state.myCommentReads = (meSnap.exists() && meSnap.data().commentReads) || {};
+    } catch(e){ state.myCommentReads = {}; }
 
     $("loginScreen").style.display = "none";
     $("appRoot").style.display = "";
@@ -412,7 +578,7 @@ const provider = new GoogleAuthProvider();
           '<label>Ở đâu <span class="tag">(tùy chọn)</span></label>' +
           '<div class="row">' +
             '<div><select id="rTinh"><option value="">-- Tỉnh --</option>'+tinhOptionsHtml()+'</select></div>' +
-            '<div><select id="rXa"><option value="">-- Xã/Phường --</option></select></div>' +
+            '<div><input type="text" id="rXa" list="rXaList" placeholder="Gõ để tìm xã/phường..." autocomplete="off"><datalist id="rXaList"></datalist></div>' +
           '</div>' +
           '<label>Tại sao <span class="tag">(tùy chọn)</span></label>' +
           '<input type="text" id="rWhy" placeholder="Mục đích / lý do thực hiện...">' +
@@ -437,7 +603,8 @@ const provider = new GoogleAuthProvider();
       $("toggleIcon").textContent = box.classList.contains("open") ? "▲" : "▼";
     });
     $("rTinh").addEventListener("change", function(){
-      $("rXa").innerHTML = xaOptionsHtml($("rTinh").value, "");
+      $("rXaList").innerHTML = xaDatalistHtml($("rTinh").value);
+      $("rXa").value = "";
     });
     refreshMyEntries();
   }
@@ -474,7 +641,7 @@ const provider = new GoogleAuthProvider();
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
-      $("rCustomer").value = ""; $("rDesc").value = ""; $("rTinh").value = ""; $("rXa").innerHTML = '<option value="">-- Xã/Phường --</option>'; $("rWhy").value = "";
+      $("rCustomer").value = ""; $("rDesc").value = ""; $("rTinh").value = ""; $("rXa").value = ""; $("rXaList").innerHTML = ""; $("rWhy").value = "";
       await refreshMyEntries();
     } catch(e){
       showToast("Lưu thất bại: " + (e && e.message ? e.message : "lỗi không xác định"), true);
@@ -542,6 +709,7 @@ const provider = new GoogleAuthProvider();
               '<button class="icon-btn tickDone'+(r.status==="done"?" on-done":"")+'" title="Hoàn thành" data-id="'+esc(d)+'">✅</button>' +
               '<button class="icon-btn tickProgress'+(r.status==="progress"?" on-progress":"")+'" title="Đang làm" data-id="'+esc(d)+'">🔄</button>' +
               '<button class="icon-btn tickNotdone'+(r.status==="notdone"?" on-notdone":"")+'" title="Chưa xong" data-id="'+esc(d)+'">❌</button>' +
+              commentBtnHtml(d, r) +
             '</div>' +
           '</td>' +
           '<td class="result-cell">'+resultText+'</td>' +
@@ -712,11 +880,11 @@ const provider = new GoogleAuthProvider();
       if (state.dashMode === "day"){
         var q = query(collection(db, "reports"), where("date","==",state.dashDate));
         var snap = await getDocs(q);
-        snap.forEach(function(d){ reports.push(d.data()); });
+        snap.forEach(function(d){ var r = d.data(); r.id = d.id; reports.push(r); });
       } else {
         var q2 = query(collection(db, "reports"), where("date",">=",state.rangeFrom), where("date","<=",state.rangeTo));
         var snap2 = await getDocs(q2);
-        snap2.forEach(function(d){ reports.push(d.data()); });
+        snap2.forEach(function(d){ var r = d.data(); r.id = d.id; reports.push(r); });
       }
     } catch(e){
       box.innerHTML = '<div class="card"><div class="empty">Lỗi tải dữ liệu: '+esc(e.message||"")+'</div></div>';
@@ -793,6 +961,12 @@ const provider = new GoogleAuthProvider();
     }).join("");
   }
 
+  // Danh sách cho <datalist> để gõ tìm nhanh xã/phường (không cần dòng placeholder).
+  function xaDatalistHtml(tinh){
+    var list = DIA_BAN[tinh] || [];
+    return list.map(function(x){ return '<option value="'+esc(x)+'">'; }).join("");
+  }
+
   // Tách chuỗi "Xã, Tỉnh" đã lưu thành 2 phần để hiển thị lại vào dropdown khi sửa.
   function splitDiaBan(location){
     if (!location) return { tinh: "", xa: "" };
@@ -855,7 +1029,7 @@ const provider = new GoogleAuthProvider();
           var rows = items.map(function(r){
             var st = STATUS[r.status] || STATUS.pending;
             var numsHtml = resultNumsHtml(r);
-            return '<div class="entry"><div class="top"><b>'+esc(r.categoryName || "")+'</b><span class="badge '+st.cls+'">'+st.label+'</span></div>' +
+            return '<div class="entry"><div class="top"><b>'+esc(r.categoryName || "")+'</b><span style="display:flex;align-items:center;gap:6px"><span class="badge '+st.cls+'">'+st.label+'</span>'+(r.id?commentBtnHtml(r.id, r):"")+'</span></div>' +
               (r.description ? '<div class="meta">Mô tả chi tiết: '+esc(r.description)+'</div>' : "") +
               extrasLineHtml(r, "meta") +
               (r.status === "done" && r.resultDescription ? '<div class="meta">Kết quả: '+esc(r.resultDescription)+'</div>' : "") +
