@@ -185,6 +185,7 @@
   <div class="sub">
     <span id="roleLine">Đang tải...</span>
     <button id="notifBell" type="button" title="Bình luận chưa đọc">🔔<span id="notifBadge" class="cbadge" style="display:none"></span></button>
+    <button id="pushBtn" type="button" style="display:none">Bật thông báo</button>
     <button id="logoutBtn">Đăng xuất</button>
   </div>
   <nav class="tabs" id="tabs">
@@ -1595,42 +1596,55 @@ const provider = new GoogleAuthProvider();
 
   // Firebase Cloud Messaging (FCM) - Push notifications
   let swRegPromise = null;
-  function initFCM(){
-    if(!('serviceWorker' in navigator)) return;
-    // Register Service Worker (relative path works on GitHub Pages subfolder)
-    swRegPromise = navigator.serviceWorker.register('firebase-messaging-sw.js');
+  const pushBtn = document.getElementById("pushBtn");
+  function pushMsg(t){ try{ showToast(t); }catch(e){ alert(t); } }
 
-    // Request notification permission
-    if(Notification.permission === 'default'){
-      Notification.requestPermission().then(function(permission){
-        if(permission === 'granted'){
-          console.log('Notification permission granted');
-          getFCMToken();
-        }
-      });
-    } else if(Notification.permission === 'granted'){
-      getFCMToken();
+  function initFCM(){
+    if(!('serviceWorker' in navigator) || !('Notification' in window)){
+      if(pushBtn){ pushBtn.style.display = "inline-block"; }
+      return;
+    }
+    swRegPromise = navigator.serviceWorker.register('firebase-messaging-sw.js');
+    if(Notification.permission === 'granted'){
+      getFCMToken(false);
+    } else if(pushBtn){
+      pushBtn.style.display = "inline-block";
     }
   }
 
-  function getFCMToken(){
+  // Bấm nút "Bật thông báo" (iPhone bắt buộc phải bấm nút mới hỏi quyền)
+  if(pushBtn) pushBtn.addEventListener("click", function(){
+    if(!('Notification' in window) || !('serviceWorker' in navigator)){
+      pushMsg("Máy này chưa hỗ trợ. iPhone: mở app từ biểu tượng ngoài màn hình chính (không mở bằng Safari).");
+      return;
+    }
+    if(!swRegPromise) swRegPromise = navigator.serviceWorker.register('firebase-messaging-sw.js');
+    Notification.requestPermission().then(function(p){
+      if(p === 'granted') getFCMToken(true);
+      else pushMsg("Thông báo đang bị chặn. Vào Cài đặt của trình duyệt/điện thoại để cho phép, rồi bấm lại.");
+    });
+  });
+
+  function getFCMToken(verbose){
     const vapidKey = "BMRAD3A8cX1NnwCIl_SFrpNhXrsnKT56lAszVLuXrhX6FZHr1empvXn5nlYceolkpPkJCbHFEw86XbBRpGG4fhM";
-    swRegPromise.then(function(reg){
+    swRegPromise.then(function(){
+      return navigator.serviceWorker.ready;
+    }).then(function(reg){
       return getToken(messaging, { vapidKey: vapidKey, serviceWorkerRegistration: reg });
     }).then(function(currentToken){
-      if(currentToken){
-        console.log('FCM Token:', currentToken);
-        if(state.myId){
-          setDoc(doc(db, "fcm_tokens", state.myId), {
-            token: currentToken, name: state.myName || "", email: state.myEmail || "",
-            ua: navigator.userAgent, timestamp: new Date()
-          }, { merge: true }).catch(function(e){ console.log('Save FCM token failed:', e); });
-        }
-      } else {
-        console.log('Unable to get FCM token');
-      }
+      if(!currentToken) throw new Error("không lấy được mã thiết bị");
+      if(!state.myId) throw new Error("chưa đăng nhập");
+      return setDoc(doc(db, "fcm_tokens", state.myId), {
+        token: currentToken, name: state.myName || "", email: state.myEmail || "",
+        ua: navigator.userAgent, timestamp: new Date()
+      }, { merge: true });
+    }).then(function(){
+      if(pushBtn) pushBtn.style.display = "none";
+      if(verbose) pushMsg("✅ Đã bật thông báo cho máy này");
     }).catch(function(err){
-      console.log('Error getting FCM token:', err);
+      console.log('FCM error:', err);
+      if(pushBtn) pushBtn.style.display = "inline-block";
+      pushMsg("❌ Lỗi bật thông báo: " + ((err && (err.code || err.message)) || err));
     });
   }
 
