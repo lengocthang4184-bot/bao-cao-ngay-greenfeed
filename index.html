@@ -67,6 +67,16 @@
   .row > * { flex: 1; min-width: 120px; }
   .banner { background: var(--gf-green-light); border: 1px solid var(--gf-green); color: var(--gf-green-dark); padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 10px; }
   .banner.warn { background: #fff8e1; border-color: var(--warn); color: #7a5b00; }
+  label .tag { font-weight: 400; color: var(--text-muted); font-size: 11.5px; }
+  .toggle-more {
+    margin-top: 12px; background: var(--gf-green-light); color: var(--gf-green-dark); border: 1px dashed var(--gf-green);
+    border-radius: 9px; padding: 9px 12px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .more-box { display: none; margin-top: 8px; padding: 10px 12px 2px; background: var(--gf-green-light); border-radius: 9px; }
+  .more-box.open { display: block; }
+  .cmeta { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .cmeta b.k { color: var(--text-muted); font-weight: 600; }
   .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
   .badge.done { background: #e3f5e9; color: #0a7a34; }
   .badge.progress { background: #fff3d6; color: #9a6a00; }
@@ -266,12 +276,14 @@ const provider = new GoogleAuthProvider();
     state.myName = user.displayName || "";
     state.myEmail = user.email || "";
 
+    // upsert users/{uid}
     try {
       await setDoc(doc(db, "users", state.myId), {
         name: state.myName, email: state.myEmail, updatedAt: new Date().toISOString()
       }, { merge: true });
     } catch(e){}
 
+    // check admin
     try {
       var adminSnap = await getDoc(doc(db, "admins", state.myId));
       state.isAdmin = adminSnap.exists();
@@ -350,14 +362,21 @@ const provider = new GoogleAuthProvider();
       '<div class="card">' +
         '<h2>Kế hoạch / thêm đầu việc</h2>' +
         assignBanner +
-        '<label>Ngày</label>' +
+        '<label>Khi nào</label>' +
         '<input type="date" id="rDate" value="'+state.reportDate+'">' +
         '<label>Loại đầu việc</label>' +
         '<select id="rCat">'+catOptions+'</select>' +
-        '<label>Khách hàng / đối tượng</label>' +
-        '<input type="text" id="rCustomer" placeholder="Tên trại, khách hàng...">' +
-        '<label>Ghi chú (tùy chọn)</label>' +
-        '<textarea id="rDesc" placeholder="Nội dung dự kiến làm..."></textarea>' +
+        '<label>Việc gì</label>' +
+        '<textarea id="rDesc" placeholder="Nội dung chính của đầu việc..."></textarea>' +
+        '<div class="toggle-more" id="toggleMore">+ Thêm chi tiết (Với ai / Ở đâu / Tại sao) <span id="toggleIcon">▼</span></div>' +
+        '<div class="more-box" id="moreBox">' +
+          '<label style="margin-top:0;">Với ai <span class="tag">(tùy chọn)</span></label>' +
+          '<input type="text" id="rCustomer" placeholder="Tên trại, khách hàng, đối tượng...">' +
+          '<label>Ở đâu <span class="tag">(tùy chọn)</span></label>' +
+          '<input type="text" id="rWhere" placeholder="Địa điểm, khu vực, trại...">' +
+          '<label>Tại sao <span class="tag">(tùy chọn)</span></label>' +
+          '<input type="text" id="rWhy" placeholder="Mục đích / lý do thực hiện...">' +
+        '</div>' +
         '<button class="btn" id="rSubmit">+ Thêm vào bảng (chưa cần chọn trạng thái)</button>' +
       '</div>' +
       '<div class="card">' +
@@ -372,6 +391,11 @@ const provider = new GoogleAuthProvider();
       refreshMyEntries();
     });
     $("rSubmit").addEventListener("click", submitReport);
+    $("toggleMore").addEventListener("click", function(){
+      var box = $("moreBox");
+      box.classList.toggle("open");
+      $("toggleIcon").textContent = box.classList.contains("open") ? "▲" : "▼";
+    });
     refreshMyEntries();
   }
 
@@ -381,7 +405,9 @@ const provider = new GoogleAuthProvider();
     if (!catId){ showToast("Vui lòng chọn loại đầu việc (hoặc nhờ quản trị tạo danh mục).", true); return; }
     var desc = $("rDesc").value.trim();
     var customer = $("rCustomer").value.trim();
-    if (!desc && !customer){ showToast("Nhập ít nhất khách hàng hoặc ghi chú công việc.", true); return; }
+    var where = $("rWhere").value.trim();
+    var why = $("rWhy").value.trim();
+    if (!desc){ showToast("Vui lòng nhập Việc gì.", true); return; }
     var btn = $("rSubmit");
     btn.disabled = true; btn.textContent = "Đang lưu...";
     try {
@@ -394,6 +420,8 @@ const provider = new GoogleAuthProvider();
         categoryId: catId,
         categoryName: (state.categories[catId] || {}).name || "",
         customer: customer,
+        location: where,
+        why: why,
         description: desc,
         status: "pending",
         reasonNotDone: "",
@@ -401,7 +429,7 @@ const provider = new GoogleAuthProvider();
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
-      $("rCustomer").value = ""; $("rDesc").value = "";
+      $("rCustomer").value = ""; $("rDesc").value = ""; $("rWhere").value = ""; $("rWhy").value = "";
       await refreshMyEntries();
     } catch(e){
       showToast("Lưu thất bại: " + (e && e.message ? e.message : "lỗi không xác định"), true);
@@ -462,9 +490,11 @@ const provider = new GoogleAuthProvider();
         html += '<tr>' +
           '<td class="stt">'+(idx+1)+'</td>' +
           '<td class="content-cell">' +
-            '<b>'+esc(r.categoryName||"")+'</b>' +
-            (r.customer ? '<div class="cmeta">'+esc(r.customer)+'</div>' : "") +
-            (r.description ? '<div class="cmeta">'+esc(r.description)+'</div>' : "") +
+            '<b>'+esc(r.description || r.categoryName || "")+'</b>' +
+            '<div class="cmeta"><b class="k">Loại:</b> '+esc(r.categoryName||"")+'</div>' +
+            (r.customer ? '<div class="cmeta"><b class="k">Với ai:</b> '+esc(r.customer)+'</div>' : "") +
+            (r.location ? '<div class="cmeta"><b class="k">Ở đâu:</b> '+esc(r.location)+'</div>' : "") +
+            (r.why ? '<div class="cmeta"><b class="k">Tại sao:</b> '+esc(r.why)+'</div>' : "") +
           '</td>' +
           '<td class="status-cell">' +
             '<span class="badge '+st.cls+'">'+st.label+'</span>' +
@@ -684,9 +714,11 @@ const provider = new GoogleAuthProvider();
           var es = summarize(items);
           var rows = items.map(function(r){
             var st = STATUS[r.status] || STATUS.pending;
-            return '<div class="entry"><div class="top"><b>'+esc(r.categoryName||"")+'</b><span class="badge '+st.cls+'">'+st.label+'</span></div>' +
-              (r.customer ? '<div>'+esc(r.customer)+'</div>' : "") +
-              (r.description ? '<div class="meta">'+esc(r.description)+'</div>' : "") +
+            return '<div class="entry"><div class="top"><b>'+esc(r.description || r.categoryName || "")+'</b><span class="badge '+st.cls+'">'+st.label+'</span></div>' +
+              '<div class="meta">Loại: '+esc(r.categoryName||"")+'</div>' +
+              (r.customer ? '<div class="meta">Với ai: '+esc(r.customer)+'</div>' : "") +
+              (r.location ? '<div class="meta">Ở đâu: '+esc(r.location)+'</div>' : "") +
+              (r.why ? '<div class="meta">Tại sao: '+esc(r.why)+'</div>' : "") +
               (r.status === "done" && r.resultDescription ? '<div class="meta">Kết quả: '+esc(r.resultDescription)+'</div>' : "") +
               (r.status === "notdone" && r.reasonNotDone ? '<div class="meta">Lý do: '+esc(r.reasonNotDone)+'</div>' : "") + '</div>';
           }).join("");
@@ -946,4 +978,3 @@ const provider = new GoogleAuthProvider();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 </body>
 </html>
-
