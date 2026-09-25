@@ -420,6 +420,7 @@ const provider = new GoogleAuthProvider();
     currentTab: "report",
     reportDate: todayStr(),
     dashDate: todayStr(),
+    dashReports: [],
     dashMode: "day",
     rangeFrom: null, rangeTo: null,
     chart: null,
@@ -845,10 +846,12 @@ const provider = new GoogleAuthProvider();
           '<button class="btn secondary small" id="modeRange" style="flex:1">Theo khoảng ngày</button>' +
         '</div>' +
         '<div id="dashControls" style="margin-top:10px"></div>' +
+        '<button class="btn small" id="dashExportBtn" style="margin-top:10px;width:100%">⬇️ Xuất Excel</button>' +
       '</div>' +
       '<div id="dashResult"></div>';
     $("modeDay").addEventListener("click", function(){ state.dashMode="day"; renderDashControls(); refreshDashboard(); });
     $("modeRange").addEventListener("click", function(){ state.dashMode="range"; renderDashControls(); refreshDashboard(); });
+    $("dashExportBtn").addEventListener("click", exportDashboardExcel);
     renderDashControls();
   }
 
@@ -890,8 +893,64 @@ const provider = new GoogleAuthProvider();
       box.innerHTML = '<div class="card"><div class="empty">Lỗi tải dữ liệu: '+esc(e.message||"")+'</div></div>';
       return;
     }
+    state.dashReports = reports;
     if (state.dashMode === "day") renderDayDashboard(reports);
     else renderRangeDashboard(reports);
+  }
+
+  function exportDashboardExcel(){
+    var reports = state.dashReports || [];
+    if (!reports.length){
+      showToast("Không có dữ liệu để xuất trong khoảng đang chọn.", true);
+      return;
+    }
+    if (typeof XLSX === "undefined"){
+      showToast("Chưa tải được thư viện xuất Excel, vui lòng thử lại.", true);
+      return;
+    }
+    var rows = reports.slice().sort(function(a,b){
+      if (a.date !== b.date) return (a.date||"").localeCompare(b.date||"");
+      if ((a.subName||"") !== (b.subName||"")) return (a.subName||"").localeCompare(b.subName||"");
+      return empName(a.userId).localeCompare(empName(b.userId));
+    }).map(function(r){
+      var st = STATUS[r.status] || STATUS.pending;
+      var updated = "";
+      try { updated = r.updatedAt ? new Date(r.updatedAt).toLocaleString("vi-VN") : ""; } catch(e){}
+      return {
+        "Ngày": r.date ? fmtDateVN(r.date) : "",
+        "Sub": r.subName || "Chưa gán Sub",
+        "Nhân viên": empName(r.userId),
+        "Hạng mục": r.categoryName || "",
+        "Trạng thái": st.label,
+        "Khách hàng": r.customer || "",
+        "Vị trí": r.location || "",
+        "Mục tiêu": r.why || "",
+        "Mô tả chi tiết": r.description || "",
+        "Kết quả": r.resultDescription || "",
+        "Sản lượng (tấn)": r.sanLuong || 0,
+        "Loại sản lượng": r.slType || "",
+        "Doanh thu (tr)": r.doanhThu || 0,
+        "Loại doanh thu": r.dtType || "",
+        "Con giống (con)": r.conGiong || 0,
+        "Loại con giống": r.cgType || "",
+        "Loại mở mới": r.moMoiType || "",
+        "SL mở mới": r.moMoiSoLuong || 0,
+        "Lý do chưa xong": r.reasonNotDone || "",
+        "Số trao đổi": r.commentCount || 0,
+        "Cập nhật lúc": updated
+      };
+    });
+    var ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = Object.keys(rows[0]).map(function(k){ return { wch: Math.min(Math.max(k.length, 12), 40) }; });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "BaoCao");
+    var fname;
+    if (state.dashMode === "day"){
+      fname = "BaoCaoNgay_" + state.dashDate + ".xlsx";
+    } else {
+      fname = "BaoCaoNgay_" + state.rangeFrom + "_den_" + state.rangeTo + ".xlsx";
+    }
+    XLSX.writeFile(wb, fname);
   }
 
   function summarize(reports){
@@ -1371,5 +1430,6 @@ const provider = new GoogleAuthProvider();
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </body>
 </html>
