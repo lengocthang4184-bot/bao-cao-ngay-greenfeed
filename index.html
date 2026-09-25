@@ -834,7 +834,7 @@ const provider = new GoogleAuthProvider();
         '</div>' +
         '<div class="row">' +
           '<div><label>Mở mới <span class="tag">(tùy chọn)</span></label><select class="fMoMoiType">'+typeOptionsHtml(state.moMoiTypes, r.moMoiType)+'</select></div>' +
-          '<div><label>Mở mới (hoạt động)</label><input type="number" step="1" class="fMoMoiCount" placeholder="0" value="'+ (r.moMoiSoLuong||"") +'"></div>' +
+          '<div><label>Mở mới (Số KH)</label><input type="number" step="1" class="fMoMoiCount" placeholder="0" value="'+ (r.moMoiSoLuong||"") +'"></div>' +
         '</div>' +
         '<label>Tọa độ nơi thực hiện <span class="tag">(tùy chọn)</span></label>' +
         '<div class="geo-row">' +
@@ -1009,7 +1009,7 @@ const provider = new GoogleAuthProvider();
         "Con giống (con)": r.conGiong || 0,
         "Loại con giống": r.cgType || "",
         "Loại mở mới": r.moMoiType || "",
-        "SL mở mới": r.moMoiSoLuong || 0,
+        "Số KH mở mới": r.moMoiSoLuong || 0,
         "Lý do chưa xong": r.reasonNotDone || "",
         "Số trao đổi": r.commentCount || 0,
         "Cập nhật lúc": updated
@@ -1127,7 +1127,7 @@ const provider = new GoogleAuthProvider();
     if (r.sanLuong) parts.push("SL: "+fmtNum(r.sanLuong)+" tấn"+(r.slType?" ("+esc(r.slType)+")":""));
     if (r.doanhThu) parts.push("DT: "+fmtNum(r.doanhThu)+" tr"+(r.dtType?" ("+esc(r.dtType)+")":""));
     if (r.conGiong) parts.push("Con giống: "+fmtNum(r.conGiong)+" con"+(r.cgType?" ("+esc(r.cgType)+")":""));
-    if (r.moMoiType) parts.push("Mở mới: "+(r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+" hoạt động ":"")+"("+esc(r.moMoiType)+")");
+    if (r.moMoiType) parts.push("Mở mới: "+(r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+" KH ":"")+"("+esc(r.moMoiType)+")");
     if (r.geo) parts.push('<a href="https://maps.google.com/?q='+encodeURIComponent(r.geo)+'" target="_blank" rel="noopener">📍 Bản đồ</a>');
     return parts.join(" · ");
   }
