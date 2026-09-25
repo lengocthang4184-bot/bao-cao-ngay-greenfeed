@@ -202,7 +202,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
-  query, where, increment, writeBatch
+  query, where, increment, writeBatch, onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -262,6 +262,44 @@ const provider = new GoogleAuthProvider();
         el.style.fontWeight = "";
       }
     }, 3000);
+  }
+
+  // ---------- THEO DÕI BÌNH LUẬN MỚI THỜI GIAN THỰC (khi đang mở trang) ----------
+  // Lắng nghe trực tiếp thay đổi commentCount trên các báo cáo liên quan để hiện toast +
+  // cập nhật badge ngay lập tức, không cần tải lại trang. Nhân viên: báo cáo của chính mình.
+  // Admin: thêm cả báo cáo trong ngày hôm nay (để theo dõi hoạt động chung).
+  function startCommentWatchers(){
+    function attach(q){
+      onSnapshot(q, function(snap){
+        snap.docChanges().forEach(function(change){
+          var d = change.doc.data(); var id = change.doc.id;
+          var newCount = Number(d.commentCount) || 0;
+          if (change.type === "added"){
+            if (!(id in state.knownCommentCounts)) state.knownCommentCounts[id] = newCount;
+          } else if (change.type === "modified"){
+            var oldCount = (id in state.knownCommentCounts) ? state.knownCommentCounts[id] : newCount;
+            if (newCount > oldCount && d.lastCommentBy && d.lastCommentBy !== state.myId){
+              notifyNewComment(id, d, newCount);
+            }
+            state.knownCommentCounts[id] = newCount;
+          }
+        });
+      }, function(err){ /* im lặng bỏ qua lỗi mạng tạm thời */ });
+    }
+    attach(query(collection(db, "reports"), where("userId","==",state.myId)));
+    if (state.isAdmin){
+      attach(query(collection(db, "reports"), where("date","==",todayStr())));
+    }
+  }
+
+  function notifyNewComment(reportId, r, newCount){
+    var key = reportId + ":" + newCount;
+    if (state.toastedCommentKeys[key]) return;
+    state.toastedCommentKeys[key] = true;
+    var who = empName(r.lastCommentBy || "");
+    showToast("💬 Bình luận mới" + (who ? " từ " + who : "") + (r.categoryName ? " · " + r.categoryName : ""));
+    if (state.currentTab === "report") refreshMyEntries();
+    else if (state.currentTab === "dashboard") refreshDashboard();
   }
 
   // ---------- TRAO ĐỔI / BÌNH LUẬN ----------
@@ -433,7 +471,9 @@ const provider = new GoogleAuthProvider();
     editingMode: null,
     myCommentReads: {},
     commentModalReportId: null,
-    commentModalTitle: ""
+    commentModalTitle: "",
+    knownCommentCounts: {},
+    toastedCommentKeys: {}
   };
 
   function $(id){ return document.getElementById(id); }
@@ -505,6 +545,8 @@ const provider = new GoogleAuthProvider();
       var meSnap = await getDoc(doc(db, "users", state.myId));
       state.myCommentReads = (meSnap.exists() && meSnap.data().commentReads) || {};
     } catch(e){ state.myCommentReads = {}; }
+
+    startCommentWatchers();
 
     $("loginScreen").style.display = "none";
     $("appRoot").style.display = "";
