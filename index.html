@@ -75,8 +75,9 @@
   }
   .more-box { display: none; margin-top: 8px; padding: 10px 12px 2px; background: var(--gf-green-light); border-radius: 9px; }
   .more-box.open { display: block; }
-  .cmeta { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .cmeta { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
   .cmeta b.k, .meta b.k { color: var(--text-muted); font-weight: 600; }
+  .cmeta .ex, .meta .ex { display: inline-block; margin-right: 4px; }
   .geo-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
   .geo-row input { flex: 1; min-width: 140px; }
   .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
@@ -92,13 +93,13 @@
   table.entries-table .stt { width: 24px; color: var(--text-muted); text-align: center; }
   table.entries-table .content-cell b { display:block; font-size: 12.5px; }
   table.entries-table .content-cell .cmeta { color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
-  table.entries-table .status-cell { min-width: 108px; }
-  table.entries-table .icon-row { display: flex; gap: 4px; margin-top: 5px; }
-  table.entries-table .icon-btn { border: 1px solid var(--border); background: var(--bg); border-radius: 6px; font-size: 13px; padding: 3px 6px; cursor: pointer; line-height: 1; }
+  table.entries-table .status-cell { min-width: 88px; }
+  table.entries-table .icon-row { display: flex; gap: 3px; margin-top: 5px; }
+  table.entries-table .icon-btn { border: 1px solid var(--border); background: var(--bg); border-radius: 6px; font-size: 12px; padding: 2px 5px; cursor: pointer; line-height: 1; }
   table.entries-table .icon-btn.on-done { border-color: var(--ok); background: var(--gf-green-light); }
   table.entries-table .icon-btn.on-progress { border-color: var(--warn); background: #fff8e1; }
   table.entries-table .icon-btn.on-notdone { border-color: var(--danger); background: #fdeaea; }
-  table.entries-table .result-cell { width: 140px; font-size: 11.5px; color: var(--text-muted); white-space: normal; }
+  table.entries-table .result-cell { width: 108px; font-size: 11.5px; color: var(--text-muted); white-space: normal; }
   table.entries-table .del-cell { width: 28px; text-align: center; }
   table.entries-table .del-cell a { color: var(--danger); font-size: 15px; cursor: pointer; }
   table.entries-table .inline-form-row td { background: var(--gf-green-light) !important; }
@@ -527,7 +528,7 @@ const provider = new GoogleAuthProvider();
           '<td class="stt">'+(idx+1)+'</td>' +
           '<td class="content-cell">' +
             '<b>'+esc(r.categoryName || "")+'</b>' +
-            (r.description ? '<div class="cmeta"><b class="k">Mô tả:</b> '+esc(r.description)+'</div>' : "") +
+            (r.description ? '<div class="cmeta">'+esc(r.description)+'</div>' : "") +
             extrasLineHtml(r, "cmeta") +
           '</td>' +
           '<td class="status-cell">' +
@@ -751,12 +752,13 @@ const provider = new GoogleAuthProvider();
   function empName(uid){ return (state.allUsers[uid] && state.allUsers[uid].name) || "Nhân viên"; }
 
   // Gộp Với ai / Ở đâu / Tại sao thành 1 dòng gọn thay vì xuống dòng riêng, để bảng không bị quá dài.
+  // Dùng icon thay vì nhãn chữ, và &nbsp; nối icon với chữ đầu tiên để tránh bị tách dòng giữa nhãn và giá trị khi cột hẹp.
   function extrasLineHtml(r, cls){
     var parts = [];
-    if (r.customer) parts.push('<b class="k">Với ai:</b> '+esc(r.customer));
-    if (r.location) parts.push('<b class="k">Ở đâu:</b> '+esc(r.location));
-    if (r.why) parts.push('<b class="k">Tại sao:</b> '+esc(r.why));
-    return parts.length ? '<div class="'+cls+'">'+parts.join(' &nbsp;·&nbsp; ')+'</div>' : "";
+    if (r.customer) parts.push('<span class="ex" title="Với ai">👤&nbsp;'+esc(r.customer)+'</span>');
+    if (r.location) parts.push('<span class="ex" title="Ở đâu">📍&nbsp;'+esc(r.location)+'</span>');
+    if (r.why) parts.push('<span class="ex" title="Tại sao">🎯&nbsp;'+esc(r.why)+'</span>');
+    return parts.length ? '<div class="'+cls+'">'+parts.join(' ')+'</div>' : "";
   }
 
   function tinhOptionsHtml(selected){
