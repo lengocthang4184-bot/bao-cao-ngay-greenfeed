@@ -163,6 +163,38 @@
   #commentModal .cm-foot { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; gap: 8px; align-items: flex-end; }
   #commentModal .cm-foot textarea { flex: 1; resize: none; min-height: 38px; max-height: 90px; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
   #commentModal .cm-foot button { border: none; background: var(--gf-green); color: #fff; border-radius: 10px; padding: 0 16px; font-size: 13px; font-weight: 700; cursor: pointer; height: 38px; }
+
+  /* --- Bảng tin nhanh (quả chuông) --- */
+  #notifBell { cursor: pointer; }
+  #notifPanel { display:none; position: fixed; top: 64px; right: 8px; width: min(380px, calc(100vw - 16px)); max-height: 72vh; overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.18); z-index: 997; padding: 10px 12px; }
+  #notifPanel.open { display: block; }
+  #notifPanel .np-head { display:flex; justify-content:space-between; align-items:center; font-size: 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  #notifPanel .np-close { border:none; background:none; font-size: 22px; line-height: 1; cursor:pointer; color: var(--text-muted); }
+  #notifPanel .np-sec { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin: 10px 0 4px; }
+  #notifPanel .np-item { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer; }
+  #notifPanel .np-item.unread { border-color: var(--gf-green); background: var(--gf-green-light); }
+  #notifPanel .np-top { display:flex; justify-content:space-between; gap: 6px; font-size: 13px; }
+  #notifPanel .np-new { background: var(--danger); color:#fff; border-radius: 999px; font-size: 10.5px; font-weight: 800; padding: 2px 7px; white-space: nowrap; }
+  #notifPanel .np-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  #notifPanel .np-text { font-size: 12.5px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+  #pushBtn { background: #fff !important; color: var(--gf-green-dark) !important; font-weight: 700; }
+  /* --- Kế hoạch tuần --- */
+  .week-nav { display:flex; justify-content:space-between; align-items:center; gap: 8px; margin: 12px 0 8px; }
+  .week-nav b { font-size: 14px; text-align:center; flex:1; }
+  .day-block.today { border-color: var(--gf-green); }
+  .plan-actions { display:flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .plan-extra { border-style: dashed; }
+  /* --- Biểu đồ Dashboard --- */
+  .chart-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  .chart-cell { border: 1px solid var(--border); border-radius: 12px; padding: 8px; min-width: 0; }
+  .chart-cell.wide { grid-column: 1 / -1; }
+  .chart-title { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+  .chart-box { position: relative; height: 230px; }
+  .chart-box.tall { height: 280px; }
+  .kpi-bar { position: relative; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; height: 28px; overflow: hidden; }
+  .kpi-bar .kpi-fill { position:absolute; left:0; top:0; bottom:0; background: linear-gradient(90deg, #7cc59b, var(--gf-green)); }
+  .kpi-bar span { position: relative; display:block; text-align:center; line-height: 28px; font-size: 12.5px; }
+  @media (max-width: 560px){ .chart-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -190,12 +222,14 @@
   </div>
   <nav class="tabs" id="tabs">
     <button data-tab="report" class="active">Nộp báo cáo</button>
+    <button data-tab="plan">Kế hoạch tuần</button>
     <button data-tab="dashboard">Dashboard</button>
     <button data-tab="admin" id="adminTabBtn" style="display:none">Quản trị</button>
   </nav>
 </header>
 <main>
   <div id="view-report"></div>
+  <div id="view-plan" style="display:none"></div>
   <div id="view-dashboard" style="display:none"></div>
   <div id="view-admin" style="display:none"></div>
 </main>
@@ -301,6 +335,8 @@ const provider = new GoogleAuthProvider();
         snap.docChanges().forEach(function(change){
           var d = change.doc.data(); var id = change.doc.id;
           var newCount = Number(d.commentCount) || 0;
+          if (change.type === "removed"){ delete state.knownReports[id]; return; }
+          state.knownReports[id] = d;
           if (change.type === "added"){
             if (!(id in state.knownCommentCounts)) state.knownCommentCounts[id] = newCount;
           } else if (change.type === "modified"){
@@ -313,6 +349,7 @@ const provider = new GoogleAuthProvider();
             }
           }
         });
+        updateNotifBell();
       }, function(err){ /* im lặng bỏ qua lỗi mạng tạm thời */ });
     }
     attach(query(collection(db, "reports"), where("userId","==",state.myId)));
@@ -473,6 +510,7 @@ const provider = new GoogleAuthProvider();
   function markCommentsRead(reportId, count){
     if (!state.myCommentReads) state.myCommentReads = {};
     state.myCommentReads[reportId] = count;
+    try { updateNotifBell(); } catch(e){}
     document.querySelectorAll('.commentBtn[data-id="'+CSS.escape(reportId)+'"] .cbadge').forEach(function(el){ el.remove(); });
     try {
       var upd = {};
@@ -522,7 +560,10 @@ const provider = new GoogleAuthProvider();
     commentModalReportId: null,
     commentModalTitle: "",
     knownCommentCounts: {},
-    toastedCommentKeys: {}
+    toastedCommentKeys: {},
+    knownReports: {},
+    dashCharts: [],
+    planWeek: null, planUser: null, planData: null, planChart: null
   };
 
   function $(id){ return document.getElementById(id); }
@@ -607,8 +648,11 @@ const provider = new GoogleAuthProvider();
     setupTabs();
     await loadStructure();
     renderReportView();
+    renderPlanView();
     renderDashboardView();
     renderAdminView();
+    $("notifBell").onclick = function(e){ e.stopPropagation(); toggleNotifPanel(); };
+    openDeepLinkedComment();
   });
 
   function setupTabs(){
@@ -618,10 +662,12 @@ const provider = new GoogleAuthProvider();
         btn.classList.add("active");
         state.currentTab = btn.dataset.tab;
         $("view-report").style.display = state.currentTab === "report" ? "" : "none";
+        $("view-plan").style.display = state.currentTab === "plan" ? "" : "none";
         $("view-dashboard").style.display = state.currentTab === "dashboard" ? "" : "none";
         $("view-admin").style.display = state.currentTab === "admin" ? "" : "none";
         if (state.currentTab === "dashboard") refreshDashboard();
         if (state.currentTab === "report") refreshMyEntries();
+        if (state.currentTab === "plan") refreshPlan();
       };
     });
   }
@@ -1034,6 +1080,7 @@ const provider = new GoogleAuthProvider();
     state.dashReports = reports;
     if (state.dashMode === "day") renderDayDashboard(reports);
     else renderRangeDashboard(reports);
+    renderDashCharts(reports);
   }
 
   function exportDashboardExcel(){
@@ -1594,6 +1641,433 @@ const provider = new GoogleAuthProvider();
     });
   }
 
+
+  // ================= (1) BẢNG TIN NHANH KHI BẤM QUẢ CHUÔNG =================
+  function unreadOf(id){
+    var r = state.knownReports[id] || {};
+    var cnt = Number(r.commentCount) || Number(state.knownCommentCounts[id]) || 0;
+    var read = (state.myCommentReads && state.myCommentReads[id]) || 0;
+    return Math.max(0, cnt - read);
+  }
+  function fmtTimeShort(iso){
+    try { return new Date(iso).toLocaleString("vi-VN", {hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"}); } catch(e){ return ""; }
+  }
+  function closeNotifPanel(){ var p = $("notifPanel"); if (p) p.classList.remove("open"); }
+  async function toggleNotifPanel(){
+    var p = $("notifPanel");
+    if (!p){
+      p = document.createElement("div");
+      p.id = "notifPanel";
+      document.body.appendChild(p);
+      p.addEventListener("click", function(e){
+        var it = e.target.closest(".np-item");
+        if (!it) return;
+        closeNotifPanel();
+        openCommentModal(it.dataset.id, it.dataset.title || "");
+      });
+    }
+    if (p.classList.contains("open")){ closeNotifPanel(); return; }
+    p.classList.add("open");
+
+    var ids = Object.keys(state.knownReports).filter(function(id){ return (Number(state.knownReports[id].commentCount)||0) > 0; });
+    ids.sort(function(a,b){ return (state.knownReports[b].lastCommentAt||"").localeCompare(state.knownReports[a].lastCommentAt||""); });
+    var unread = ids.filter(function(id){ return unreadOf(id) > 0; });
+    var recent = ids.filter(function(id){ return unreadOf(id) === 0; }).slice(0, 5);
+    var show = unread.slice(0, 20).concat(recent);
+
+    function itemHtml(id, last){
+      var r = state.knownReports[id] || {};
+      var n = unreadOf(id);
+      var who = last ? (last.name || "") : "";
+      var when = last ? fmtTimeShort(last.createdAt) : (r.lastCommentAt ? fmtTimeShort(r.lastCommentAt) : "");
+      var text = last ? String(last.text || "") : "";
+      if (text.length > 90) text = text.slice(0, 90) + "…";
+      return '<div class="np-item'+(n>0?" unread":"")+'" data-id="'+esc(id)+'" data-title="'+esc(r.categoryName||"")+'">' +
+        '<div class="np-top"><b>'+esc(r.categoryName || "Đầu việc")+'</b>' +
+          (n>0 ? '<span class="np-new">'+n+' mới</span>' : '<span class="muted">đã đọc</span>') + '</div>' +
+        '<div class="np-meta">'+(who?'👤 '+esc(who)+' · ':'')+esc(when)+(r.date?' · ngày '+fmtDateVN(r.date):'')+'</div>' +
+        (text ? '<div class="np-text">'+esc(text)+'</div>' : '') +
+      '</div>';
+    }
+    function render(lastMap){
+      var html = '<div class="np-head"><b>🔔 Tin nhắn</b><button type="button" class="np-close" onclick="document.getElementById(\'notifPanel\').classList.remove(\'open\')">×</button></div>';
+      if (!show.length){
+        html += '<div class="empty">Chưa có tin nhắn nào.</div>';
+      } else {
+        if (unread.length) html += '<div class="np-sec">Chưa đọc ('+unread.length+')</div>' + unread.slice(0,20).map(function(id){ return itemHtml(id, lastMap[id]); }).join("");
+        else html += '<div class="empty" style="padding:10px 0">Không có tin nhắn mới 👍</div>';
+        if (recent.length) html += '<div class="np-sec">Gần đây</div>' + recent.map(function(id){ return itemHtml(id, lastMap[id]); }).join("");
+      }
+      html += '<div class="muted" style="text-align:center;padding:6px 0 2px">Bấm vào một dòng để mở cuộc trao đổi</div>';
+      p.innerHTML = html;
+    }
+    render({});
+    // Tải nội dung tin nhắn mới nhất của từng đầu việc
+    try {
+      var lastMap = {};
+      for (var i = 0; i < show.length; i += 30){
+        var chunk = show.slice(i, i+30);
+        var snap = await getDocs(query(collection(db, "comments"), where("reportId","in",chunk)));
+        snap.forEach(function(d){
+          var c = d.data();
+          if (!lastMap[c.reportId] || (c.createdAt||"") > (lastMap[c.reportId].createdAt||"")) lastMap[c.reportId] = c;
+        });
+      }
+      if (p.classList.contains("open")) render(lastMap);
+    } catch(e){}
+  }
+  document.addEventListener("click", function(e){
+    var p = $("notifPanel");
+    if (!p || !p.classList.contains("open")) return;
+    if (e.target.closest("#notifPanel") || e.target.closest("#notifBell")) return;
+    closeNotifPanel();
+  });
+
+  // Mở thẳng cuộc trao đổi khi bấm vào thông báo trên điện thoại (link có ?cm=...)
+  async function openDeepLinkedComment(){
+    try {
+      var params = new URLSearchParams(location.search);
+      var cm = params.get("cm");
+      if (!cm) return;
+      history.replaceState(null, "", location.pathname);
+      var title = "";
+      try { var s = await getDoc(doc(db, "reports", cm)); if (s.exists()) title = s.data().categoryName || ""; } catch(e){}
+      openCommentModal(cm, title);
+    } catch(e){}
+  }
+
+  // ================= (2) KẾ HOẠCH TUẦN (DEMO) =================
+  var DOW = ["Thứ 2","Thứ 3","Thứ 4","Thứ 5","Thứ 6","Thứ 7","Chủ nhật"];
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function ymd(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+  function addDaysIso(iso, n){ var d = new Date(iso+"T00:00:00"); d.setDate(d.getDate()+n); return ymd(d); }
+  function mondayOf(iso){ var d = new Date(iso+"T00:00:00"); d.setDate(d.getDate() - ((d.getDay()+6)%7)); return ymd(d); }
+  function weekDays(ws){ var a = []; for (var i=0;i<7;i++) a.push(addDaysIso(ws, i)); return a; }
+  function planDocId(uid, ws){ return uid + "_" + ws; }
+  function normTxt(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\u0111/g,"d").replace(/\s+/g," ").trim(); }
+  async function ensureAllUsers(){
+    if (Object.keys(state.allUsers).length) return;
+    try {
+      var us = await getDocs(collection(db, "users"));
+      us.forEach(function(d){ state.allUsers[d.id] = d.data(); });
+    } catch(e){}
+  }
+
+  function renderPlanView(){
+    if (!state.planWeek) state.planWeek = mondayOf(todayStr());
+    if (!state.planUser) state.planUser = state.myId;
+    var catOptions = Object.keys(state.categories).map(function(id){
+      return '<option value="'+esc(id)+'">'+esc(state.categories[id].name)+'</option>';
+    }).join("") || '<option value="">(chưa có danh mục)</option>';
+    var userPicker = "";
+    if (state.isAdmin){
+      var uids = Object.keys(state.allUsers).sort(function(a,b){ return empName(a).localeCompare(empName(b)); });
+      userPicker = '<label>Xem kế hoạch của</label><select id="plUser">' +
+        uids.map(function(u){ return '<option value="'+esc(u)+'"'+(u===state.planUser?" selected":"")+'>'+esc(empName(u))+(u===state.myId?" (tôi)":"")+'</option>'; }).join("") +
+        '</select>';
+    }
+    $("view-plan").innerHTML =
+      '<div class="card">' +
+        '<h2>🗓️ Kế hoạch tuần <span class="tag">bản thử</span></h2>' +
+        '<div class="muted">Lên kế hoạch cho cả tuần. App tự đối chiếu từng ngày với báo cáo ngày để biết việc nào đã làm, việc nào chưa.</div>' +
+        '<div class="week-nav"><button class="btn secondary small" id="plPrev">◀</button><b id="plWeekLabel"></b><button class="btn secondary small" id="plNext">▶</button></div>' +
+        '<button class="btn secondary small" id="plThisWeek" style="width:100%">Về tuần này</button>' +
+        userPicker +
+      '</div>' +
+      '<div class="card" id="plAddCard">' +
+        '<h2>+ Thêm việc vào kế hoạch</h2>' +
+        '<div class="row"><div><label>Ngày</label><select id="plDay"></select></div>' +
+        '<div><label>Loại đầu việc</label><select id="plCat">'+catOptions+'</select></div></div>' +
+        '<label>Với ai <span class="tag">(tùy chọn)</span></label><input type="text" id="plCustomer" placeholder="Tên trại, khách hàng...">' +
+        '<label>Ở đâu <span class="tag">(tùy chọn)</span></label><input type="text" id="plLocation" placeholder="Xã/phường, tỉnh...">' +
+        '<label>Mục tiêu</label><input type="text" id="plGoal" placeholder="VD: Chốt đơn 5 tấn cám heo">' +
+        '<button class="btn" id="plAddBtn" style="margin-top:10px;width:100%">Thêm vào kế hoạch</button>' +
+      '</div>' +
+      '<div id="plResult"><div class="card"><div class="empty">Đang tải...</div></div></div>';
+    $("plPrev").onclick = function(){ state.planWeek = addDaysIso(state.planWeek, -7); refreshPlan(); };
+    $("plNext").onclick = function(){ state.planWeek = addDaysIso(state.planWeek, 7); refreshPlan(); };
+    $("plThisWeek").onclick = function(){ state.planWeek = mondayOf(todayStr()); refreshPlan(); };
+    if ($("plUser")) $("plUser").onchange = function(e){ state.planUser = e.target.value; refreshPlan(); };
+    $("plAddBtn").onclick = addPlanItem;
+    refreshPlan();
+  }
+
+  async function refreshPlan(){
+    var ws = state.planWeek, days = weekDays(ws), uid = state.planUser || state.myId;
+    $("plWeekLabel").textContent = "Tuần " + fmtDateVN(days[0]).slice(0,5) + " – " + fmtDateVN(days[6]);
+    var today = todayStr();
+    $("plDay").innerHTML = days.map(function(d, i){
+      return '<option value="'+d+'"'+(d===today?" selected":"")+'>'+DOW[i]+' '+fmtDateVN(d).slice(0,5)+'</option>';
+    }).join("");
+    var canEdit = (uid === state.myId) || state.isAdmin;
+    $("plAddCard").style.display = canEdit ? "" : "none";
+    var box = $("plResult");
+    box.innerHTML = '<div class="card"><div class="empty">Đang tải...</div></div>';
+    var plan = { items: [] }, reports = [];
+    try {
+      var ps = await getDoc(doc(db, "weekPlans", planDocId(uid, ws)));
+      if (ps.exists()) plan = ps.data();
+      var snaps = await Promise.all(days.map(function(d){
+        return getDocs(query(collection(db, "reports"), where("userId","==",uid), where("date","==",d)));
+      }));
+      snaps.forEach(function(s){ s.forEach(function(d){ var r = d.data(); r.id = d.id; reports.push(r); }); });
+    } catch(e){
+      box.innerHTML = '<div class="card"><div class="empty">Lỗi tải kế hoạch: '+esc(e.message||"")+'</div></div>';
+      return;
+    }
+    state.planData = plan;
+    renderPlanResult(plan.items || [], reports, days, canEdit);
+  }
+
+  // Ghép từng việc trong kế hoạch với báo cáo ngày cùng ngày
+  function matchPlan(items, reports){
+    var used = {}, match = {};
+    items.forEach(function(it){
+      var r = reports.find(function(x){ return !used[x.id] && x.planItemId === it.id; });
+      if (r){ used[r.id] = true; match[it.id] = r; }
+    });
+    items.forEach(function(it){
+      if (match[it.id]) return;
+      var r = reports.find(function(x){
+        if (used[x.id] || x.date !== it.day || x.categoryId !== it.catId) return false;
+        if (!it.customer) return true;
+        var a = normTxt(it.customer), b = normTxt(x.customer + " " + x.description);
+        return b.indexOf(a) !== -1;
+      });
+      if (r){ used[r.id] = true; match[it.id] = r; }
+    });
+    return { match: match, used: used };
+  }
+
+  function renderPlanResult(items, reports, days, canEdit){
+    var m = matchPlan(items, reports);
+    var today = todayStr();
+    var total = items.length, reported = 0, done = 0, missed = 0;
+    items.forEach(function(it){
+      var r = m.match[it.id];
+      if (r){ reported++; if (r.status === "done") done++; }
+      else if (it.day < today) missed++;
+    });
+    var extra = reports.filter(function(r){ return !m.used[r.id]; });
+    var pct = total ? Math.round(done*100/total) : 0;
+
+    var html = '<div class="card"><h2>Kết quả thực hiện tuần</h2>' +
+      '<div class="stat-grid">' +
+        '<div class="stat"><div class="num">'+total+'</div><div class="label">Việc kế hoạch</div></div>' +
+        '<div class="stat"><div class="num">'+reported+'</div><div class="label">Đã có báo cáo</div></div>' +
+        '<div class="stat"><div class="num">'+pct+'%</div><div class="label">Hoàn thành</div></div>' +
+      '</div>' +
+      '<div class="metric-grid" style="grid-template-columns:repeat(2,1fr)">' +
+        '<div class="metric"><div class="num" style="color:var(--danger)">'+missed+'</div><div class="label">Quá ngày chưa báo cáo</div></div>' +
+        '<div class="metric"><div class="num">'+extra.length+'</div><div class="label">Việc phát sinh ngoài KH</div></div>' +
+      '</div>' +
+      '<div class="chart-box" style="height:200px"><canvas id="planChart"></canvas></div>' +
+    '</div>';
+
+    html += '<div class="card"><h2>Chi tiết từng ngày</h2>';
+    days.forEach(function(d, i){
+      var its = items.filter(function(it){ return it.day === d; });
+      var reps = reports.filter(function(r){ return r.date === d; });
+      var ex = extra.filter(function(r){ return r.date === d; });
+      var isToday = d === today;
+      html += '<details class="sub-block day-block'+(isToday?" today":"")+'"'+(isToday || its.length ? " open" : "")+'>' +
+        '<summary><span>'+DOW[i]+' · '+fmtDateVN(d).slice(0,5)+(isToday?' <span class="badge progress">Hôm nay</span>':'')+'</span>' +
+        '<span class="muted">KH '+its.length+' · BC '+reps.length+'</span></summary><div class="body">';
+      if (!its.length && !ex.length) html += '<div class="muted" style="padding:4px 0 8px">Chưa có kế hoạch.</div>';
+      its.forEach(function(it){
+        var r = m.match[it.id];
+        var badge;
+        if (r){ var st = STATUS[r.status] || STATUS.pending; badge = '<span class="badge '+st.cls+'">'+st.label+'</span>'; }
+        else if (d < today) badge = '<span class="badge notdone">⚠️ Chưa báo cáo</span>';
+        else badge = '<span class="badge pending">Chưa làm</span>';
+        html += '<div class="entry plan-item"><div class="top"><b>'+esc(it.categoryName||"")+'</b>'+badge+'</div>' +
+          (it.goal ? '<div class="meta">🎯 '+esc(it.goal)+'</div>' : '') +
+          ((it.customer||it.location) ? '<div class="meta">'+(it.customer?'👤 '+esc(it.customer)+' ':'')+(it.location?'📍 '+esc(it.location):'')+'</div>' : '') +
+          (r && r.status === "done" && r.resultDescription ? '<div class="meta">✅ Kết quả: '+esc(r.resultDescription)+'</div>' : '') +
+          (canEdit ? '<div class="plan-actions">' +
+            (!r && state.planUser === state.myId ? '<button class="btn small" data-plan-report="'+esc(it.id)+'">📝 Tạo báo cáo ngày</button>' : '') +
+            '<button class="btn secondary small" data-plan-del="'+esc(it.id)+'">Xoá</button></div>' : '') +
+        '</div>';
+      });
+      ex.forEach(function(r){
+        var st = STATUS[r.status] || STATUS.pending;
+        html += '<div class="entry plan-extra"><div class="top"><span>➕ '+esc(r.categoryName||"")+' <span class="muted">(ngoài KH)</span></span><span class="badge '+st.cls+'">'+st.label+'</span></div>' +
+          (r.description ? '<div class="meta">'+esc(r.description)+'</div>' : '') + '</div>';
+      });
+      html += '</div></details>';
+    });
+    html += '</div>';
+    $("plResult").innerHTML = html;
+
+    $("plResult").querySelectorAll("[data-plan-del]").forEach(function(b){
+      b.onclick = function(){ deletePlanItem(b.dataset.planDel); };
+    });
+    $("plResult").querySelectorAll("[data-plan-report]").forEach(function(b){
+      b.onclick = function(){ createReportFromPlan(b.dataset.planReport, b); };
+    });
+
+    // Biểu đồ Kế hoạch vs Báo cáo theo ngày
+    if (state.planChart){ state.planChart.destroy(); state.planChart = null; }
+    if (window.Chart){
+      state.planChart = new Chart($("planChart"), {
+        type: "bar",
+        data: { labels: days.map(function(d,i){ return DOW[i].replace("Thứ ","T").replace("Chủ nhật","CN"); }),
+          datasets: [
+            { label: "Kế hoạch", data: days.map(function(d){ return items.filter(function(it){ return it.day===d; }).length; }), backgroundColor: "#b9d9c6" },
+            { label: "Đã báo cáo", data: days.map(function(d){ return items.filter(function(it){ return it.day===d && m.match[it.id]; }).length; }), backgroundColor: "#00843D" },
+            { label: "Ngoài KH", data: days.map(function(d){ return extra.filter(function(r){ return r.date===d; }).length; }), backgroundColor: "#0072ce" }
+          ]},
+        options: { responsive: true, maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+          plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } } }
+      });
+    }
+  }
+
+  async function savePlanItems(items){
+    var uid = state.planUser || state.myId, ws = state.planWeek;
+    var assign = state.team[uid] || null;
+    await setDoc(doc(db, "weekPlans", planDocId(uid, ws)), {
+      userId: uid, weekStart: ws, weekEnd: addDaysIso(ws, 6),
+      subId: assign ? assign.subId : null, subName: assign ? assign.subName : null,
+      items: items, updatedAt: new Date().toISOString(), updatedBy: state.myId
+    }, { merge: true });
+  }
+
+  async function addPlanItem(){
+    var catId = $("plCat").value;
+    if (!catId){ showToast("Vui lòng chọn loại đầu việc.", true); return; }
+    var it = {
+      id: "p" + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      day: $("plDay").value, catId: catId, categoryName: (state.categories[catId]||{}).name || "",
+      customer: $("plCustomer").value.trim(), location: $("plLocation").value.trim(), goal: $("plGoal").value.trim(),
+      createdAt: new Date().toISOString()
+    };
+    var btn = $("plAddBtn"); btn.disabled = true;
+    try {
+      var items = ((state.planData && state.planData.items) || []).concat([it]);
+      await savePlanItems(items);
+      $("plCustomer").value = ""; $("plLocation").value = ""; $("plGoal").value = "";
+      showToast("Đã thêm vào kế hoạch");
+      await refreshPlan();
+    } catch(e){ showToast("Lưu kế hoạch thất bại: " + (e.message||""), true); }
+    btn.disabled = false;
+  }
+
+  async function deletePlanItem(id){
+    try {
+      var items = ((state.planData && state.planData.items) || []).filter(function(x){ return x.id !== id; });
+      await savePlanItems(items);
+      await refreshPlan();
+    } catch(e){ showToast("Xoá thất bại: " + (e.message||""), true); }
+  }
+
+  async function createReportFromPlan(id, btn){
+    var it = ((state.planData && state.planData.items) || []).find(function(x){ return x.id === id; });
+    if (!it) return;
+    btn.disabled = true;
+    try {
+      var assign = state.team[state.myId] || null;
+      await addDoc(collection(db, "reports"), {
+        userId: state.myId,
+        subId: assign ? assign.subId : null, subName: assign ? assign.subName : null,
+        date: it.day, categoryId: it.catId, categoryName: it.categoryName,
+        customer: it.customer || "", location: it.location || "", why: it.goal || "",
+        description: it.goal || ("Theo kế hoạch tuần: " + it.categoryName),
+        status: "pending", reasonNotDone: "",
+        sanLuong: 0, doanhThu: 0, conGiong: 0, moMoiType: "", moMoiSoLuong: 0, geo: "",
+        planItemId: it.id,
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      });
+      showToast("Đã tạo báo cáo ngày " + fmtDateVN(it.day) + " - vào tab Nộp báo cáo để cập nhật kết quả");
+      await refreshPlan();
+    } catch(e){ showToast("Tạo báo cáo thất bại: " + (e.message||""), true); btn.disabled = false; }
+  }
+
+  // ================= (3) BIỂU ĐỒ TRỰC QUAN CHO DASHBOARD =================
+  var ST_COLORS = { done: "#00843D", progress: "#e0a900", notdone: "#c62828", pending: "#8a97a0" };
+  var ST_KEYS = ["done","progress","notdone","pending"];
+  function stKey(r){ return (r.status === "done" || r.status === "notdone" || r.status === "pending") ? r.status : "progress"; }
+  function destroyDashCharts(){ (state.dashCharts||[]).forEach(function(c){ try{ c.destroy(); }catch(e){} }); state.dashCharts = []; }
+  function shortName(s, n){ s = String(s||""); return s.length > n ? s.slice(0, n-1) + "…" : s; }
+
+  async function renderDashCharts(reports){
+    destroyDashCharts();
+    var box = $("dashResult");
+    if (!box || !reports.length || !window.Chart) return;
+    await ensureAllUsers();
+    if (state.dashReports !== reports) return; // đã chuyển sang dữ liệu khác
+    var s = summarize(reports);
+    var pct = s.total ? Math.round(s.done*100/s.total) : 0;
+    var isRange = state.dashMode === "range";
+    var html = '<div class="card" id="dashChartsCard"><h2>📊 Biểu đồ trực quan</h2>' +
+      '<div class="kpi-bar"><div class="kpi-fill" style="width:'+pct+'%"></div><span>Tỉ lệ hoàn thành: <b>'+pct+'%</b> ('+s.done+'/'+s.total+' việc)</span></div>' +
+      '<div class="chart-grid">' +
+        '<div class="chart-cell"><div class="chart-title">Trạng thái đầu việc</div><div class="chart-box"><canvas id="chStatus"></canvas></div></div>' +
+        '<div class="chart-cell"><div class="chart-title">Tiến độ theo Sub</div><div class="chart-box"><canvas id="chSub"></canvas></div></div>' +
+        '<div class="chart-cell"><div class="chart-title">Theo nhân viên (top 10)</div><div class="chart-box tall"><canvas id="chEmp"></canvas></div></div>' +
+        '<div class="chart-cell"><div class="chart-title">Theo loại đầu việc</div><div class="chart-box tall"><canvas id="chCat"></canvas></div></div>' +
+        (isRange ? '<div class="chart-cell wide"><div class="chart-title">Sản lượng & doanh thu theo ngày</div><div class="chart-box"><canvas id="chSales"></canvas></div></div>' : '') +
+      '</div></div>';
+    var first = box.firstElementChild;
+    if (first) first.insertAdjacentHTML("afterend", html); else box.insertAdjacentHTML("beforeend", html);
+
+    var legend = { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } };
+    function stackedBar(canvasId, groups, labelFn){
+      var keys = Object.keys(groups).sort(function(a,b){ return groups[b].total - groups[a].total; }).slice(0, 10);
+      return new Chart($(canvasId), {
+        type: "bar",
+        data: { labels: keys.map(function(k){ return shortName(labelFn(k), 16); }),
+          datasets: ST_KEYS.map(function(sk){ return { label: STATUS[sk].label, data: keys.map(function(k){ return groups[k][sk]; }), backgroundColor: ST_COLORS[sk] }; }) },
+        options: { indexAxis: "y", responsive: true, maintainAspectRatio: false,
+          scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }, y: { stacked: true, ticks: { font: { size: 11 } } } },
+          plugins: { legend: legend } }
+      });
+    }
+    function groupBy(keyFn){
+      var g = {};
+      reports.forEach(function(r){
+        var k = keyFn(r);
+        if (!g[k]) g[k] = { total: 0, done: 0, progress: 0, notdone: 0, pending: 0 };
+        g[k].total++; g[k][stKey(r)]++;
+      });
+      return g;
+    }
+
+    var charts = [];
+    charts.push(new Chart($("chStatus"), {
+      type: "doughnut",
+      data: { labels: ST_KEYS.map(function(k){ return STATUS[k].label; }),
+        datasets: [{ data: [s.done, s.progress, s.notdone, s.pending], backgroundColor: ST_KEYS.map(function(k){ return ST_COLORS[k]; }), borderWidth: 2, borderColor: "#fff" }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "58%", plugins: { legend: legend } }
+    }));
+    var subNames = {};
+    var bySub = groupBy(function(r){ var k = r.subId || "__none__"; subNames[k] = r.subName || "Chưa gán Sub"; return k; });
+    charts.push(stackedBar("chSub", bySub, function(k){ return subNames[k]; }));
+    charts.push(stackedBar("chEmp", groupBy(function(r){ return r.userId || "?"; }), function(k){ return empName(k); }));
+    var catNames = {};
+    charts.push(stackedBar("chCat", groupBy(function(r){ var k = r.categoryId || r.categoryName || "?"; catNames[k] = r.categoryName || "Khác"; return k; }), function(k){ return catNames[k]; }));
+
+    if (isRange){
+      var dates = [], cur = new Date(state.rangeFrom+"T00:00:00"), end = new Date(state.rangeTo+"T00:00:00");
+      while (cur <= end){ dates.push(ymd(cur)); cur.setDate(cur.getDate()+1); }
+      var sl = {}, dt = {};
+      reports.forEach(function(r){ sl[r.date] = (sl[r.date]||0) + (Number(r.sanLuong)||0); dt[r.date] = (dt[r.date]||0) + (Number(r.doanhThu)||0); });
+      charts.push(new Chart($("chSales"), {
+        type: "line",
+        data: { labels: dates.map(function(d){ return fmtDateVN(d).slice(0,5); }), datasets: [
+          { label: "Sản lượng (tấn)", data: dates.map(function(d){ return sl[d]||0; }), borderColor: "#00843D", backgroundColor: "rgba(0,132,61,.12)", fill: true, tension: .3, yAxisID: "y" },
+          { label: "Doanh thu (tr)", data: dates.map(function(d){ return dt[d]||0; }), borderColor: "#0072ce", backgroundColor: "#0072ce", tension: .3, yAxisID: "y1" }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+          scales: { y: { beginAtZero: true, position: "left", title: { display: true, text: "tấn" } },
+                    y1: { beginAtZero: true, position: "right", grid: { drawOnChartArea: false }, title: { display: true, text: "triệu" } } },
+          plugins: { legend: legend } }
+      }));
+    }
+    state.dashCharts = charts;
+  }
+
   // Firebase Cloud Messaging (FCM) - Push notifications
   let swRegPromise = null;
   const pushBtn = document.getElementById("pushBtn");
@@ -1648,20 +2122,11 @@ const provider = new GoogleAuthProvider();
     });
   }
 
-  // Listen for foreground messages
+  // Tin nhắn đến khi đang mở app: hiện thông báo nhỏ trong app + cập nhật quả chuông
   onMessage(messaging, function(payload){
-    console.log('Message received in foreground:', payload);
-    const notificationTitle = payload.notification?.title || 'Thông báo';
-    const notificationOptions = {
-      body: payload.notification?.body || '',
-      icon: 'icon-192.png',
-      badge: 'icon-192.png'
-    };
-
-    // Show notification
-    if('Notification' in window && Notification.permission === 'granted'){
-      new Notification(notificationTitle, notificationOptions);
-    }
+    var n = payload.notification || {};
+    showToast((n.title || "Thông báo") + (n.body ? ": " + n.body : ""));
+    try { updateNotifBell(); } catch(e){}
   });
 
   // Initialize FCM when auth state changes
