@@ -76,7 +76,9 @@
   .more-box { display: none; margin-top: 8px; padding: 10px 12px 2px; background: var(--gf-green-light); border-radius: 9px; }
   .more-box.open { display: block; }
   .cmeta { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
-  .cmeta b.k { color: var(--text-muted); font-weight: 600; }
+  .cmeta b.k, .meta b.k { color: var(--text-muted); font-weight: 600; }
+  .geo-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
+  .geo-row input { flex: 1; min-width: 140px; }
   .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
   .badge.done { background: #e3f5e9; color: #0a7a34; }
   .badge.progress { background: #fff3d6; color: #9a6a00; }
@@ -238,6 +240,14 @@ const provider = new GoogleAuthProvider();
     notdone: {label: "Chưa hoàn thành", cls: "notdone"}
   };
 
+  // Danh sách xã/phường sau sáp nhập 2025 (nguồn: Cổng TTĐT Chính phủ - xaydungchinhsach.chinhphu.vn).
+  // Nếu tên xã/phường nào chưa đúng, vào Quản trị báo lại để cập nhật.
+  var DIA_BAN = {
+    "Thanh Hóa": ["Các Sơn","Trường Lâm","Hà Trung","Tống Sơn","Hà Long","Hoạt Giang","Lĩnh Toại","Triệu Lộc","Đông Thành","Hậu Lộc","Hoa Lộc","Vạn Lộc","Nga Sơn","Nga Thắng","Hồ Vương","Tân Tiến","Nga An","Ba Đình","Hoằng Hóa","Hoằng Tiến","Hoằng Thanh","Hoằng Lộc","Hoằng Châu","Hoằng Sơn","Hoằng Phú","Hoằng Giang","Lưu Vệ","Quảng Yên","Quảng Ngọc","Quảng Ninh","Quảng Bình","Tiên Trang","Quảng Chính","Nông Cống","Thắng Lợi","Trung Chính","Trường Văn","Thăng Bình","Tượng Lĩnh","Công Chính","Thiệu Hóa","Thiệu Quang","Thiệu Tiến","Thiệu Toán","Thiệu Trung","Yên Định","Yên Trường","Yên Phú","Quý Lộc","Yên Ninh","Định Tân","Định Hòa","Thọ Xuân","Thọ Long","Xuân Hòa","Sao Vàng","Lam Sơn","Thọ Lập","Xuân Tín","Xuân Lập","Vĩnh Lộc","Tây Đô","Biện Thượng","Triệu Sơn","Thọ Bình","Thọ Ngọc","Thọ Phú","Hợp Tiến","An Nông","Tân Ninh","Đồng Tiến","Hồi Xuân","Nam Xuân","Thiên Phủ","Hiền Kiệt","Phú Lệ","Trung Thành","Tam Lư","Quan Sơn","Trung Hạ","Linh Sơn","Đồng Lương","Văn Phú","Giao An","Bá Thước","Thiết Ống","Văn Nho","Điền Quang","Điền Lư","Quý Lương","Cổ Lũng","Pù Luông","Ngọc Lặc","Thạch Lập","Ngọc Liên","Minh Sơn","Nguyệt Ấn","Kiên Thọ","Cẩm Thạch","Cẩm Thủy","Cẩm Tú","Cẩm Vân","Cẩm Tân","Kim Tân","Vân Du","Ngọc Trạo","Thạch Bình","Thành Vinh","Thạch Quảng","Như Xuân","Thượng Ninh","Xuân Bình","Hóa Quỳ","Thanh Phong","Thanh Quân","Xuân Du","Mậu Lâm","Như Thanh","Yên Thọ","Thanh Kỳ","Thường Xuân","Luận Thành","Tân Thành","Thắng Lộc","Xuân Chinh","Mương Lát","Hạc Thành","Quảng Phú","Đông Quang","Đông Sơn","Đông Tiến","Hàm Rồng","Nguyệt Viên","Sầm Sơn","Nam Sầm Sơn","Bỉm Sơn","Quang Trung","Ngọc Sơn","Tân Dân","Hải Lĩnh","Tĩnh Gia","Đào Duy Từ","Hải Bình","Trúc Lâm","Nghi Sơn","Phú Xuân","Mương Chanh","Quang Chiểu","Tam Chung","Pù Nhi","Nhi Sơn","Mương Lý","Trung Lý","Trung Sơn","Na Mèo","Sơn Thủy","Sơn Điện","Mương Mìn","Tam Thanh","Yên Khương","Yên Thắng","Xuân Thái","Bát Mọt","Yên Nhân","Lương Sơn","Vạn Xuân"],
+    "Nghệ An": ["Anh Sơn","Yên Xuân","Nhân Hòa","Anh Sơn Đông","Vĩnh Tường","Thành Bình Thọ","Con Cuông","Môn Sơn","Mậu Thạch","Cam Phục","Châu Khê","Diễn Châu","Đức Châu","Quảng Châu","Hải Châu","Tân Châu","An Châu","Minh Châu","Hùng Châu","Đô Lương","Bạch Ngọc","Văn Hiến","Bạch Hà","Thuần Trung","Lương Sơn","Hưng Nguyên","Yên Trung","Hưng Nguyên Nam","Lam Thành","Chiêu Lưu","Hữu Kiệm","Mường Típ","Mường Xén","Na Loi","Na Ngoi","Nậm Cắn","Kim Liên","Vạn An","Nam Đàn","Đại Huệ","Thiên Nhẫn","Nghĩa Đàn","Nghĩa Thọ","Nghĩa Lâm","Nghĩa Mai","Nghĩa Hưng","Nghĩa Khánh","Nghĩa Lộc","Nghi Lộc","Phúc Lộc","Đông Lộc","Trung Lộc","Thần Lĩnh","Hải Lộc","Văn Kiều","Mường Quàng","Quế Phong","Thông Thụ","Tiền Phong","Tri Lễ","Quỳ Châu","Châu Tiến","Hùng Chân","Quỳ Hợp","Tam Hợp","Châu Lộc","Châu Hồng","Mường Ham","Mường Chọng","Minh Hợp","Quỳnh Lưu","Quỳnh Văn","Quỳnh Anh","Quỳnh Tam","Quỳnh Phú","Quỳnh Sơn","Quỳnh Thắng","Tân Kỳ","Tân Phú","Tân An","Nghĩa Đồng","Giai Xuân","Nghĩa Hành","Tiên Đồng","Đông Hiếu","Bích Hào","Cát Ngạn","Đại Đồng","Hạnh Lâm","Hoa Quân","Kim Bảng","Sơn Lâm","Tam Đồng","Xuân Lâm","Nga My","Nhôn Mai","Tam Quang","Tam Thái","Tương Dương","Yên Hòa","Yên Na","Yên Thành","Quan Thành","Hợp Minh","Vân Tụ","Vân Du","Quang Đồng","Giai Lạc","Bình Minh","Đông Thành","Hoàng Mai","Quỳnh Mai","Tân Mai","Thái Hòa","Tây Hiếu","Trường Vinh","Thành Vinh","Vinh Hưng","Vinh Phú","Vinh Lộc","Cửa Lò","Keng Đu","Mỹ Lý","Bắc Lý","Huồi Tụ","Mường Lống","Bình Chuẩn","Hữu Khuông","Lượng Minh","Châu Bình"],
+    "Hà Tĩnh": ["Thạch Lạc","Đồng Tiến","Thạch Khê","Cẩm Bình","Kỳ Xuân","Kỳ Anh","Kỳ Hoa","Kỳ Văn","Kỳ Khang","Kỳ Lạc","Kỳ Thượng","Cẩm Xuyên","Thiên Cầm","Cẩm Duệ","Cẩm Hưng","Cẩm Lạc","Cẩm Trung","Yên Hòa","Thạch Hà","Toàn Lưu","Việt Xuyên","Đông Kinh","Thạch Xuân","Lộc Hà","Hồng Lộc","Mai Phụ","Can Lộc","Tùng Lộc","Gia Hanh","Trường Lưu","Xuân Lộc","Đồng Lộc","Tiên Điền","Nghi Xuân","Cổ Đạm","Đan Hải","Đức Thọ","Đức Đồng","Đức Quang","Đức Thịnh","Đức Minh","Hương Sơn","Sơn Tây","Tứ Mỹ","Sơn Giang","Sơn Tiến","Sơn Hồng","Kim Hoa","Vũ Quang","Mai Hoa","Thượng Đức","Hương Khê","Hương Phố","Hương Đô","Hà Linh","Hương Bình","Phúc Trạch","Hương Xuân","Thành Sen","Trần Phú","Hà Huy Tập","Vũng Áng","Sông Trí","Hoành Sơn","Hải Ninh","Bắc Hồng Lĩnh","Nam Hồng Lĩnh","Sơn Kim 1","Sơn Kim 2"]
+  };
+
   var state = {
     myId: null, myName: "", myEmail: "",
     isAdmin: false,
@@ -389,7 +399,10 @@ const provider = new GoogleAuthProvider();
           '<label style="margin-top:0;">Với ai <span class="tag">(tùy chọn)</span></label>' +
           '<input type="text" id="rCustomer" placeholder="Tên trại, khách hàng, đối tượng...">' +
           '<label>Ở đâu <span class="tag">(tùy chọn)</span></label>' +
-          '<input type="text" id="rWhere" placeholder="Địa điểm, khu vực, trại...">' +
+          '<div class="row">' +
+            '<div><select id="rTinh"><option value="">-- Tỉnh --</option>'+tinhOptionsHtml()+'</select></div>' +
+            '<div><select id="rXa"><option value="">-- Xã/Phường --</option></select></div>' +
+          '</div>' +
           '<label>Tại sao <span class="tag">(tùy chọn)</span></label>' +
           '<input type="text" id="rWhy" placeholder="Mục đích / lý do thực hiện...">' +
         '</div>' +
@@ -412,6 +425,9 @@ const provider = new GoogleAuthProvider();
       box.classList.toggle("open");
       $("toggleIcon").textContent = box.classList.contains("open") ? "▲" : "▼";
     });
+    $("rTinh").addEventListener("change", function(){
+      $("rXa").innerHTML = xaOptionsHtml($("rTinh").value, "");
+    });
     refreshMyEntries();
   }
 
@@ -421,7 +437,9 @@ const provider = new GoogleAuthProvider();
     if (!catId){ showToast("Vui lòng chọn loại đầu việc (hoặc nhờ quản trị tạo danh mục).", true); return; }
     var desc = $("rDesc").value.trim();
     var customer = $("rCustomer").value.trim();
-    var where = $("rWhere").value.trim();
+    var tinh = $("rTinh").value;
+    var xa = $("rXa").value;
+    var where = (xa && tinh) ? (xa + ", " + tinh) : (xa || tinh || "");
     var why = $("rWhy").value.trim();
     if (!desc){ showToast("Vui lòng nhập mô tả chi tiết.", true); return; }
     var btn = $("rSubmit");
@@ -441,11 +459,11 @@ const provider = new GoogleAuthProvider();
         description: desc,
         status: "pending",
         reasonNotDone: "",
-        sanLuong: 0, doanhThu: 0, conGiong: 0,
+        sanLuong: 0, doanhThu: 0, conGiong: 0, geo: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
-      $("rCustomer").value = ""; $("rDesc").value = ""; $("rWhere").value = ""; $("rWhy").value = "";
+      $("rCustomer").value = ""; $("rDesc").value = ""; $("rTinh").value = ""; $("rXa").innerHTML = '<option value="">-- Xã/Phường --</option>'; $("rWhy").value = "";
       await refreshMyEntries();
     } catch(e){
       showToast("Lưu thất bại: " + (e && e.message ? e.message : "lỗi không xác định"), true);
@@ -505,9 +523,7 @@ const provider = new GoogleAuthProvider();
           '<td class="content-cell">' +
             '<b>'+esc(r.categoryName || "")+'</b>' +
             (r.description ? '<div class="cmeta"><b class="k">Mô tả:</b> '+esc(r.description)+'</div>' : "") +
-            (r.customer ? '<div class="cmeta"><b class="k">Với ai:</b> '+esc(r.customer)+'</div>' : "") +
-            (r.location ? '<div class="cmeta"><b class="k">Ở đâu:</b> '+esc(r.location)+'</div>' : "") +
-            (r.why ? '<div class="cmeta"><b class="k">Tại sao:</b> '+esc(r.why)+'</div>' : "") +
+            extrasLineHtml(r, "cmeta") +
           '</td>' +
           '<td class="status-cell">' +
             '<span class="badge '+st.cls+'">'+st.label+'</span>' +
@@ -561,6 +577,11 @@ const provider = new GoogleAuthProvider();
           '<div><label>Loại con giống</label><select class="fCgType">'+typeOptionsHtml(state.cgTypes, r.cgType)+'</select></div>' +
           '<div><label>Con giống (con)</label><input type="number" step="1" class="fCg" placeholder="0" value="'+ (r.conGiong||"") +'"></div>' +
         '</div>' +
+        '<label>Tọa độ nơi thực hiện <span class="tag">(tùy chọn)</span></label>' +
+        '<div class="geo-row">' +
+          '<input type="text" class="fGeo" placeholder="VD: 19.807,105.776" value="'+esc(r.geo||"")+'">' +
+          '<button type="button" class="btn small secondary geoBtn">📍 Lấy vị trí hiện tại</button>' +
+        '</div>' +
         '<button class="btn small confirmBtn" data-id="'+esc(id)+'" data-mode="done">Xác nhận hoàn thành</button> ' +
         '<button class="btn small secondary cancelBtn">Hủy</button>' +
       '</div>';
@@ -580,6 +601,19 @@ const provider = new GoogleAuthProvider();
     if (!form) return;
     var cancelBtn = form.querySelector(".cancelBtn");
     if (cancelBtn) cancelBtn.addEventListener("click", function(){ state.editingRowId = null; state.editingMode = null; refreshMyEntries(); });
+    var geoBtn = form.querySelector(".geoBtn");
+    if (geoBtn) geoBtn.addEventListener("click", function(){
+      if (!navigator.geolocation){ showToast("Trình duyệt/thiết bị không hỗ trợ định vị. Bạn có thể tự nhập tọa độ vào ô bên cạnh.", true); return; }
+      geoBtn.disabled = true; geoBtn.textContent = "Đang lấy vị trí...";
+      navigator.geolocation.getCurrentPosition(function(pos){
+        var geo = pos.coords.latitude.toFixed(6) + "," + pos.coords.longitude.toFixed(6);
+        form.querySelector(".fGeo").value = geo;
+        geoBtn.disabled = false; geoBtn.textContent = "📍 Lấy lại vị trí";
+      }, function(err){
+        showToast("Không lấy được vị trí (" + (err && err.message ? err.message : "lỗi") + "). Bạn có thể tự nhập tọa độ vào ô bên cạnh.", true);
+        geoBtn.disabled = false; geoBtn.textContent = "📍 Lấy vị trí hiện tại";
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    });
     var confirmBtn = form.querySelector(".confirmBtn");
     if (confirmBtn) confirmBtn.addEventListener("click", async function(){
       var id = confirmBtn.dataset.id;
@@ -593,7 +627,8 @@ const provider = new GoogleAuthProvider();
         var slType = form.querySelector(".fSlType").value;
         var dtType = form.querySelector(".fDtType").value;
         var cgType = form.querySelector(".fCgType").value;
-        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg, slType: slType, dtType: dtType, cgType: cgType });
+        var geo = form.querySelector(".fGeo").value.trim();
+        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg, slType: slType, dtType: dtType, cgType: cgType, geo: geo });
       } else {
         var reason = form.querySelector(".fReason").value.trim();
         if (!reason){ showToast("Vui lòng nhập lý do chưa hoàn thành.", true); return; }
@@ -606,7 +641,7 @@ const provider = new GoogleAuthProvider();
     try {
       var payload = Object.assign({ status: status, updatedAt: new Date().toISOString() }, extra || {});
       if (status !== "notdone") payload.reasonNotDone = "";
-      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; payload.slType = ""; payload.dtType = ""; payload.cgType = ""; }
+      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; payload.slType = ""; payload.dtType = ""; payload.cgType = ""; payload.geo = ""; }
       await updateDoc(doc(db, "reports", id), payload);
       state.editingRowId = null; state.editingMode = null;
       refreshMyEntries();
@@ -707,6 +742,38 @@ const provider = new GoogleAuthProvider();
 
   function empName(uid){ return (state.allUsers[uid] && state.allUsers[uid].name) || "Nhân viên"; }
 
+  // Gộp Với ai / Ở đâu / Tại sao thành 1 dòng gọn thay vì xuống dòng riêng, để bảng không bị quá dài.
+  function extrasLineHtml(r, cls){
+    var parts = [];
+    if (r.customer) parts.push('<b class="k">Với ai:</b> '+esc(r.customer));
+    if (r.location) parts.push('<b class="k">Ở đâu:</b> '+esc(r.location));
+    if (r.why) parts.push('<b class="k">Tại sao:</b> '+esc(r.why));
+    return parts.length ? '<div class="'+cls+'">'+parts.join(' &nbsp;·&nbsp; ')+'</div>' : "";
+  }
+
+  function tinhOptionsHtml(selected){
+    return Object.keys(DIA_BAN).map(function(t){
+      return '<option value="'+esc(t)+'"'+(t===selected?" selected":"")+'>'+esc(t)+'</option>';
+    }).join("");
+  }
+
+  function xaOptionsHtml(tinh, selected){
+    var list = DIA_BAN[tinh] || [];
+    return '<option value="">-- Xã/Phường --</option>' + list.map(function(x){
+      return '<option value="'+esc(x)+'"'+(x===selected?" selected":"")+'>'+esc(x)+'</option>';
+    }).join("");
+  }
+
+  // Tách chuỗi "Xã, Tỉnh" đã lưu thành 2 phần để hiển thị lại vào dropdown khi sửa.
+  function splitDiaBan(location){
+    if (!location) return { tinh: "", xa: "" };
+    var idx = location.lastIndexOf(", ");
+    if (idx === -1) return { tinh: "", xa: location };
+    var xa = location.slice(0, idx), tinh = location.slice(idx+2);
+    if (!DIA_BAN[tinh]) return { tinh: "", xa: location };
+    return { tinh: tinh, xa: xa };
+  }
+
   function typeOptionsHtml(typesObj, selected){
     var ids = Object.keys(typesObj);
     var html = '<option value="">-- Chọn loại --</option>';
@@ -723,6 +790,7 @@ const provider = new GoogleAuthProvider();
     if (r.sanLuong) parts.push("SL: "+fmtNum(r.sanLuong)+" tấn"+(r.slType?" ("+esc(r.slType)+")":""));
     if (r.doanhThu) parts.push("DT: "+fmtNum(r.doanhThu)+" tr"+(r.dtType?" ("+esc(r.dtType)+")":""));
     if (r.conGiong) parts.push("Con giống: "+fmtNum(r.conGiong)+" con"+(r.cgType?" ("+esc(r.cgType)+")":""));
+    if (r.geo) parts.push('<a href="https://maps.google.com/?q='+encodeURIComponent(r.geo)+'" target="_blank" rel="noopener">📍 Bản đồ</a>');
     return parts.join(" · ");
   }
 
@@ -759,9 +827,7 @@ const provider = new GoogleAuthProvider();
             var numsHtml = resultNumsHtml(r);
             return '<div class="entry"><div class="top"><b>'+esc(r.categoryName || "")+'</b><span class="badge '+st.cls+'">'+st.label+'</span></div>' +
               (r.description ? '<div class="meta">Mô tả: '+esc(r.description)+'</div>' : "") +
-              (r.customer ? '<div class="meta">Với ai: '+esc(r.customer)+'</div>' : "") +
-              (r.location ? '<div class="meta">Ở đâu: '+esc(r.location)+'</div>' : "") +
-              (r.why ? '<div class="meta">Tại sao: '+esc(r.why)+'</div>' : "") +
+              extrasLineHtml(r, "meta") +
               (r.status === "done" && r.resultDescription ? '<div class="meta">Kết quả: '+esc(r.resultDescription)+'</div>' : "") +
               (numsHtml ? '<div class="meta">'+numsHtml+'</div>' : "") +
               (r.status === "notdone" && r.reasonNotDone ? '<div class="meta">Lý do: '+esc(r.reasonNotDone)+'</div>' : "") + '</div>';
