@@ -252,7 +252,7 @@ const provider = new GoogleAuthProvider();
     myId: null, myName: "", myEmail: "",
     isAdmin: false,
     subs: {}, categories: {}, team: {}, allUsers: {},
-    slTypes: {}, dtTypes: {}, cgTypes: {},
+    slTypes: {}, dtTypes: {}, cgTypes: {}, moMoiTypes: {},
     myAssignment: null,
     currentTab: "report",
     reportDate: todayStr(),
@@ -361,6 +361,11 @@ const provider = new GoogleAuthProvider();
       state.cgTypes = {};
       cgSnap.forEach(function(d){ state.cgTypes[d.id] = d.data(); });
     } catch(e){}
+    try {
+      var mmSnap = await getDocs(collection(db, "moMoiTypes"));
+      state.moMoiTypes = {};
+      mmSnap.forEach(function(d){ state.moMoiTypes[d.id] = d.data(); });
+    } catch(e){}
     if (state.isAdmin){
       try {
         var usersSnap = await getDocs(collection(db, "users"));
@@ -459,7 +464,7 @@ const provider = new GoogleAuthProvider();
         description: desc,
         status: "pending",
         reasonNotDone: "",
-        sanLuong: 0, doanhThu: 0, conGiong: 0, geo: "",
+        sanLuong: 0, doanhThu: 0, conGiong: 0, moMoiType: "", geo: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -577,6 +582,8 @@ const provider = new GoogleAuthProvider();
           '<div><label>Loại con giống</label><select class="fCgType">'+typeOptionsHtml(state.cgTypes, r.cgType)+'</select></div>' +
           '<div><label>Con giống (con)</label><input type="number" step="1" class="fCg" placeholder="0" value="'+ (r.conGiong||"") +'"></div>' +
         '</div>' +
+        '<label>Mở mới <span class="tag">(tùy chọn)</span></label>' +
+        '<select class="fMoMoiType">'+typeOptionsHtml(state.moMoiTypes, r.moMoiType)+'</select>' +
         '<label>Tọa độ nơi thực hiện <span class="tag">(tùy chọn)</span></label>' +
         '<div class="geo-row">' +
           '<input type="text" class="fGeo" placeholder="VD: 19.807,105.776" value="'+esc(r.geo||"")+'">' +
@@ -627,8 +634,9 @@ const provider = new GoogleAuthProvider();
         var slType = form.querySelector(".fSlType").value;
         var dtType = form.querySelector(".fDtType").value;
         var cgType = form.querySelector(".fCgType").value;
+        var moMoiType = form.querySelector(".fMoMoiType").value;
         var geo = form.querySelector(".fGeo").value.trim();
-        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg, slType: slType, dtType: dtType, cgType: cgType, geo: geo });
+        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg, slType: slType, dtType: dtType, cgType: cgType, moMoiType: moMoiType, geo: geo });
       } else {
         var reason = form.querySelector(".fReason").value.trim();
         if (!reason){ showToast("Vui lòng nhập lý do chưa hoàn thành.", true); return; }
@@ -641,7 +649,7 @@ const provider = new GoogleAuthProvider();
     try {
       var payload = Object.assign({ status: status, updatedAt: new Date().toISOString() }, extra || {});
       if (status !== "notdone") payload.reasonNotDone = "";
-      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; payload.slType = ""; payload.dtType = ""; payload.cgType = ""; payload.geo = ""; }
+      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; payload.slType = ""; payload.dtType = ""; payload.cgType = ""; payload.moMoiType = ""; payload.geo = ""; }
       await updateDoc(doc(db, "reports", id), payload);
       state.editingRowId = null; state.editingMode = null;
       refreshMyEntries();
@@ -790,6 +798,7 @@ const provider = new GoogleAuthProvider();
     if (r.sanLuong) parts.push("SL: "+fmtNum(r.sanLuong)+" tấn"+(r.slType?" ("+esc(r.slType)+")":""));
     if (r.doanhThu) parts.push("DT: "+fmtNum(r.doanhThu)+" tr"+(r.dtType?" ("+esc(r.dtType)+")":""));
     if (r.conGiong) parts.push("Con giống: "+fmtNum(r.conGiong)+" con"+(r.cgType?" ("+esc(r.cgType)+")":""));
+    if (r.moMoiType) parts.push("Mở mới: "+esc(r.moMoiType));
     if (r.geo) parts.push('<a href="https://maps.google.com/?q='+encodeURIComponent(r.geo)+'" target="_blank" rel="noopener">📍 Bản đồ</a>');
     return parts.join(" · ");
   }
@@ -970,6 +979,13 @@ const provider = new GoogleAuthProvider();
           '<button class="btn small" id="addCgTypeBtn" style="flex:0 0 auto">+ Thêm</button>' +
         '</div>' +
         '<button class="btn secondary small" id="seedCgTypeBtn" style="margin-top:10px">Tạo mặc định</button>' +
+        '<h3>Loại mở mới</h3>' +
+        '<div id="moMoiTypeList"></div>' +
+        '<div class="row" style="margin-top:8px">' +
+          '<input type="text" id="newMoMoiTypeName" placeholder="VD: Đại lý, Trại trực tiếp, Hộ nuôi...">' +
+          '<button class="btn small" id="addMoMoiTypeBtn" style="flex:0 0 auto">+ Thêm</button>' +
+        '</div>' +
+        '<button class="btn secondary small" id="seedMoMoiTypeBtn" style="margin-top:10px">Tạo mặc định</button>' +
       '</div>';
 
     $("addSubBtn").addEventListener("click", addSub);
@@ -981,6 +997,8 @@ const provider = new GoogleAuthProvider();
     $("seedDtTypeBtn").addEventListener("click", function(){ seedGenericTypes("dtTypes","dtTypes","dtTypeList", ["TBCT","SPTY"]); });
     $("addCgTypeBtn").addEventListener("click", function(){ addGenericType("cgTypes","cgTypes","newCgTypeName","cgTypeList"); });
     $("seedCgTypeBtn").addEventListener("click", function(){ seedGenericTypes("cgTypes","cgTypes","cgTypeList", ["GF24","Hcs Farm","Hcs LK","Gà giống","Vịt giống","Gà thịt","Vịt thịt","Heo thịt"]); });
+    $("addMoMoiTypeBtn").addEventListener("click", function(){ addGenericType("moMoiTypes","moMoiTypes","newMoMoiTypeName","moMoiTypeList"); });
+    $("seedMoMoiTypeBtn").addEventListener("click", function(){ seedGenericTypes("moMoiTypes","moMoiTypes","moMoiTypeList", ["Đại lý","Trại trực tiếp","Hộ nuôi"]); });
     var searchTimer = null;
     $("empSearch").addEventListener("input", function(e){
       clearTimeout(searchTimer);
@@ -995,6 +1013,7 @@ const provider = new GoogleAuthProvider();
     renderGenericTypeList("slTypes","slTypeList","slTypes");
     renderGenericTypeList("dtTypes","dtTypeList","dtTypes");
     renderGenericTypeList("cgTypes","cgTypeList","cgTypes");
+    renderGenericTypeList("moMoiTypes","moMoiTypeList","moMoiTypes");
   }
 
   function renderGenericTypeList(stateKey, boxId, collectionName){
