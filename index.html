@@ -209,6 +209,7 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
   query, where, increment, writeBatch, onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAzDUMBVG_WoBv3sN6oHheDieBYFxQ9V5M",
@@ -222,6 +223,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const messaging = getMessaging(app);
 const provider = new GoogleAuthProvider();
 
 (function(){
@@ -304,8 +306,10 @@ const provider = new GoogleAuthProvider();
             var oldCount = (id in state.knownCommentCounts) ? state.knownCommentCounts[id] : newCount;
             if (newCount > oldCount && d.lastCommentBy && d.lastCommentBy !== state.myId){
               notifyNewComment(id, d, newCount);
+            } else {
+              state.knownCommentCounts[id] = newCount;
+              updateNotifBell();
             }
-            state.knownCommentCounts[id] = newCount;
           }
         });
       }, function(err){ /* im lặng bỏ qua lỗi mạng tạm thời */ });
@@ -316,12 +320,32 @@ const provider = new GoogleAuthProvider();
     }
   }
 
+  // Cập nhật badge thông báo trên nút chuông (tổng số bình luận chưa đọc)
+  function updateNotifBell(){
+    var total = 0;
+    Object.keys(state.knownCommentCounts).forEach(function(id){
+      var cnt = Number(state.knownCommentCounts[id]) || 0;
+      var read = (state.myCommentReads && state.myCommentReads[id]) || 0;
+      var unread = Math.max(0, cnt - read);
+      total += unread;
+    });
+    var badge = document.getElementById("notifBadge");
+    if (!badge) return;
+    if (total > 0){
+      badge.textContent = total;
+      badge.style.display = "inline-block";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
   function notifyNewComment(reportId, r, newCount){
     var key = reportId + ":" + newCount;
     if (state.toastedCommentKeys[key]) return;
     state.toastedCommentKeys[key] = true;
     var who = empName(r.lastCommentBy || "");
     showToast("💬 Bình luận mới" + (who ? " từ " + who : "") + (r.categoryName ? " · " + r.categoryName : ""));
+    updateNotifBell();
     if (state.currentTab === "report") refreshMyEntries();
     else if (state.currentTab === "dashboard") refreshDashboard();
   }
@@ -736,6 +760,8 @@ const provider = new GoogleAuthProvider();
     btn.disabled = true; btn.textContent = "Đang lưu...";
     try {
       var assign = state.team[state.myId] || null;
+      // DEBUG: log Sub hiện tại
+      console.log("[SUBMIT] userId:", state.myId, "assign:", assign);
       await addDoc(collection(db, "reports"), {
         userId: state.myId,
         subId: assign ? assign.subId : null,
@@ -1566,6 +1592,69 @@ const provider = new GoogleAuthProvider();
       });
     });
   }
+
+  // Firebase Cloud Messaging (FCM) - Push notifications
+  function initFCM(){
+    // Register Service Worker
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('firebase-messaging-sw.js').catch(function(err){
+        console.log('Service Worker registration failed:', err);
+      });
+    }
+
+    // Request notification permission
+    if(Notification.permission === 'default'){
+      Notification.requestPermission().then(function(permission){
+        if(permission === 'granted'){
+          console.log('Notification permission granted');
+          getFCMToken();
+        }
+      });
+    } else if(Notification.permission === 'granted'){
+      getFCMToken();
+    }
+  }
+
+  function getFCMToken(){
+    const vapidKey = "BAXHLsJy-KTshQdFvHvuV7N0-J3hJ2hKqmYXCXlVJJiZd_0JaU2b3DEv2QFUCdZqSAVCZ3m2wqCJhKLs5YEMr7s";
+    getToken(messaging, { vapidKey: vapidKey }).then(function(currentToken){
+      if(currentToken){
+        console.log('FCM Token:', currentToken);
+        // Optionally save token to database for sending notifications
+        if(state.myId){
+          setDoc(doc(db, "fcm_tokens", state.myId), { token: currentToken, timestamp: new Date() }, { merge: true });
+        }
+      } else {
+        console.log('Unable to get FCM token');
+      }
+    }).catch(function(err){
+      console.log('Error getting FCM token:', err);
+    });
+  }
+
+  // Listen for foreground messages
+  onMessage(messaging, function(payload){
+    console.log('Message received in foreground:', payload);
+    const notificationTitle = payload.notification?.title || 'Thông báo';
+    const notificationOptions = {
+      body: payload.notification?.body || '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png'
+    };
+
+    // Show notification
+    if('Notification' in window && Notification.permission === 'granted'){
+      new Notification(notificationTitle, notificationOptions);
+    }
+  });
+
+  // Initialize FCM when auth state changes
+  onAuthStateChanged(auth, function(user){
+    if(user && 'Notification' in window){
+      // Wait a moment for state to be fully initialized
+      setTimeout(initFCM, 1000);
+    }
+  });
 
 })();
 </script>
