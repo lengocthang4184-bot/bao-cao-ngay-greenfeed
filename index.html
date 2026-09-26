@@ -46,7 +46,8 @@
   header .sub { font-size: 12px; opacity: 0.85; margin-top: 2px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
   header .sub button { background: rgba(255,255,255,0.18); border: none; color: #fff; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; cursor: pointer; }
   #notifBell { position: relative; font-size: 14px; padding: 4px 8px; }
-  nav.tabs { display: flex; gap: 6px; padding: 10px 12px 0; overflow-x: auto; }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px 0; }
+  @media (max-width: 480px){ nav.tabs button { padding: 7px 10px !important; font-size: 12.5px !important; flex: 1 1 auto; } }
   nav.tabs button {
     background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 14px;
     border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer;
@@ -91,23 +92,28 @@
   .badge.progress { background: #fff3d6; color: #9a6a00; }
   .badge.notdone { background: #fde3e3; color: #a91e1e; }
   .badge.pending { background: #eceff1; color: #52606a; }
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
-  table.entries-table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 12.5px; }
-  table.entries-table th { background: var(--gf-green); color: #fff; padding: 8px 6px; text-align: left; font-size: 11.5px; font-weight: 700; position: sticky; top: 0; }
-  table.entries-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  table.entries-table tr:nth-child(even) td { background: rgba(0,132,61,0.04); }
-  table.entries-table .stt { width: 24px; color: var(--text-muted); text-align: center; }
-  table.entries-table .content-cell b { display:block; font-size: 12.5px; }
-  table.entries-table .content-cell .cmeta { color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
-  table.entries-table .status-cell { min-width: 88px; }
-  table.entries-table .icon-row { display: flex; gap: 3px; margin-top: 5px; }
-  table.entries-table .icon-btn { border: 1px solid var(--border); background: var(--bg); border-radius: 6px; font-size: 12px; padding: 2px 5px; cursor: pointer; line-height: 1; }
-  table.entries-table .icon-btn.on-done { border-color: var(--ok); background: var(--gf-green-light); }
-  table.entries-table .icon-btn.on-progress { border-color: var(--warn); background: #fff8e1; }
-  table.entries-table .icon-btn.on-notdone { border-color: var(--danger); background: #fdeaea; }
-  table.entries-table .result-cell { width: 108px; font-size: 11.5px; color: var(--text-muted); white-space: normal; }
-  table.entries-table .del-cell { width: 28px; text-align: center; }
-  table.entries-table .del-cell a { color: var(--danger); font-size: 15px; cursor: pointer; }
+  .table-wrap { margin: 0 -4px; }
+  table.entries-table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 13px; }
+  table.entries-table th { background: var(--gf-green); color: #fff; padding: 8px 6px; text-align: left; font-size: 12px; font-weight: 700; }
+  table.entries-table td { padding: 8px 6px 4px; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
+  table.entries-table tr.main-row td { border-top: 2px solid var(--border); }
+  table.entries-table tbody tr.main-row:first-child td { border-top: none; }
+  table.entries-table .stt { width: 26px; color: var(--text-muted); text-align: center; font-weight: 700; }
+  table.entries-table .content-cell b { display:block; font-size: 13px; }
+  table.entries-table .content-cell .cmeta { color: var(--text-muted); font-size: 12px; margin-top: 3px; }
+  table.entries-table .result-cell { font-size: 12.5px; }
+  table.entries-table .result-cell .badge { display:inline-block; margin-bottom: 4px; }
+  table.entries-table .result-cell .rtext { color: var(--text); }
+  table.entries-table .result-cell .rnone { color: var(--text-muted); font-style: italic; }
+  table.entries-table tr.act-row td { padding: 4px 6px 12px; }
+  .act-bar { display:flex; flex-wrap: wrap; gap: 6px; }
+  .act-btn { flex: 1 1 auto; min-height: 40px; border: 1.5px solid var(--border); background: #fff; border-radius: 10px; font-size: 13px; font-weight: 600; padding: 6px 8px; cursor: pointer; white-space: nowrap; color: var(--text); text-decoration: none; display:inline-flex; align-items:center; justify-content:center; gap:4px; position: relative; }
+  .act-btn.on-done { border-color: var(--ok); background: var(--gf-green-light); }
+  .act-btn.on-progress { border-color: var(--warn); background: #fff8e1; }
+  .act-btn.on-notdone { border-color: var(--danger); background: #fdeaea; }
+  .act-btn.chat { background: #0072ce; border-color: #0072ce; color: #fff; }
+  .act-btn.del { flex: 0 0 auto; color: var(--danger); min-width: 44px; }
+  .act-btn.lock { flex: 0 0 auto; color: var(--text-muted); cursor: default; min-width: 44px; }
   table.entries-table .inline-form-row td { background: var(--gf-green-light) !important; }
   .inline-form { border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 8px; }
   .inline-form .row { margin-bottom: 6px; }
@@ -145,7 +151,7 @@
   #loginScreen .gf-logo { height: 40px; padding: 5px 7px; margin-right: 0; margin-bottom: 4px; display: block; margin-left: auto; margin-right: auto; }
   .commentBtn { position: relative; }
   .cbadge { position: absolute; top: -6px; right: -6px; background: var(--danger); color: #fff; font-size: 9.5px; font-weight: 800; line-height: 1; border-radius: 999px; padding: 2px 4px; min-width: 14px; text-align: center; }
-  .entry .top .commentBtn { border: 1px solid var(--border); background: var(--bg); border-radius: 6px; font-size: 12px; padding: 2px 6px; cursor: pointer; }
+  .entry .top .commentBtn { border: 1.5px solid #0072ce; background: #0072ce; color: #fff; border-radius: 8px; font-size: 13px; font-weight: 700; padding: 5px 10px; cursor: pointer; }
   #commentOverlay { display:none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 998; align-items: flex-end; justify-content: center; }
   #commentOverlay.open { display: flex; }
   #commentModal { background: #fff; width: 100%; max-width: 520px; max-height: 80vh; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; box-shadow: 0 -4px 20px rgba(0,0,0,.2); }
@@ -199,6 +205,47 @@
   .draft-tag { display:inline-block; font-size:10.5px; font-weight:700; background:#fff3cd; color:#8a6d00; border:1px solid #f0d27a; border-radius:999px; padding:1px 7px; margin-left:4px; }
   .submit-bar { margin-top:12px; padding:10px 12px; border:1px dashed var(--gf-green); border-radius:10px; background:#fbfffc; }
   .sent-ok { font-size:13px; color:var(--gf-green-dark); font-weight:600; }
+  /* --- Nộp báo cáo ngày / Duyệt / Trả lại --- */
+  .ds-card { margin-top:12px; padding:12px; border:2px solid var(--gf-green); border-radius:12px; background:#fbfffc; }
+  .ds-card.late { border-color: var(--danger); background:#fff7f7; }
+  .ds-card.returned { border-color: var(--warn); background:#fffaf0; }
+  .ds-title { font-weight:800; font-size:14px; }
+  .ds-line { font-size:13px; margin-top:6px; }
+  .ds-check { list-style:none; padding:0; margin:8px 0 0; }
+  .ds-check li { font-size:13px; padding:5px 0; border-top:1px dashed var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .chip { display:inline-block; font-size:11px; font-weight:700; border-radius:999px; padding:2px 8px; margin:2px 2px 0 0; border:1px solid var(--border); background:#fff; white-space:nowrap; }
+  .chip.ok { background: var(--gf-green-light); border-color: var(--ok); color: var(--gf-green-dark); }
+  .chip.warn { background:#fff8e1; border-color: var(--warn); color:#8a6d00; }
+  .chip.bad { background:#fdeaea; border-color: var(--danger); color: var(--danger); }
+  .chip.info { background:#e8f2fc; border-color:#0072ce; color:#0059a3; }
+  .rv-bar { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 8px; }
+  .rv-bar .btn { flex:1 1 auto; }
+  .entry.is-draft { opacity:.75; border-style: dashed; }
+  details.sales-block > summary .chips { text-align:right; }
+  /* --- Banner đầu trang --- */
+  #topBanners .tb { margin: 10px 12px 0; padding: 10px 12px; border-radius: 12px; font-size: 13.5px; display:flex; gap:10px; align-items:center; justify-content:space-between; }
+  #topBanners .tb.push { background:#fff3cd; border:1.5px solid #f0b400; cursor:pointer; font-weight:600; }
+  #topBanners .tb.ann { background:#e8f2fc; border:1.5px solid #0072ce; }
+  #topBanners .tb.ann .ann-body { white-space: pre-wrap; margin-top:3px; font-size:13px; }
+  #topBanners .tb .btn { flex:0 0 auto; }
+  /* --- Tuân thủ --- */
+  .cp-table { width:100%; border-collapse:collapse; font-size:12.5px; table-layout: fixed; }
+  .cp-table th { background: var(--gf-green); color:#fff; padding:6px 4px; font-size:11.5px; text-align:center; }
+  .cp-table td { border-bottom:1px solid var(--border); padding:6px 4px; text-align:center; }
+  .cp-table td.nm { text-align:left; font-weight:600; overflow-wrap:anywhere; }
+  .cp-table tr.over td { background:#fdeaea; }
+  .cp-days { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .cp-day { width:44px; text-align:center; border-radius:8px; font-size:11px; padding:3px 0; border:1px solid var(--border); cursor:default; }
+  .cp-day.DungGio { background: var(--gf-green-light); border-color: var(--ok); }
+  .cp-day.Tre { background:#fff8e1; border-color: var(--warn); }
+  .cp-day.ChuaGui { background:#fdeaea; border-color: var(--danger); }
+  .cp-day.NghiPhep, .cp-day.LoaiTru { background:#eceff1; border-color:#90a4ae; }
+  .cp-day.Cho { background:#fff; color: var(--text-muted); }
+  .cp-day.admin { cursor:pointer; }
+  .stat[data-f], .metric[data-f] { cursor: pointer; transition: transform .1s; }
+  .stat[data-f]:active, .metric[data-f]:active { transform: scale(.97); }
+  .metric[data-f] { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .cp-legend { display:flex; flex-wrap:wrap; gap:6px; font-size:11.5px; margin-top:6px; }
   .lead-tag { display:inline-block; font-size:10.5px; font-weight:700; background:#fde68a; color:#7a5b00; border-radius:999px; padding:1px 7px; margin-left:4px; }
   .mg-btn { border:1px solid var(--border); background:var(--bg); border-radius:6px; font-size:12px; padding:2px 6px; cursor:pointer; }
   #editOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:999; align-items:flex-end; justify-content:center; }
@@ -242,13 +289,16 @@
     <button data-tab="report" class="active">Kế hoạch ngày</button>
     <button data-tab="plan">Kế hoạch tuần</button>
     <button data-tab="dashboard">Dashboard</button>
+    <button data-tab="comply">Tuân thủ</button>
     <button data-tab="admin" id="adminTabBtn" style="display:none">Quản trị</button>
   </nav>
 </header>
+<div id="topBanners"></div>
 <main>
   <div id="view-report"></div>
   <div id="view-plan" style="display:none"></div>
   <div id="view-dashboard" style="display:none"></div>
+  <div id="view-comply" style="display:none"></div>
   <div id="view-admin" style="display:none"></div>
 </main>
 </div>
@@ -260,7 +310,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
-  query, where, increment, writeBatch, onSnapshot
+  query, where, increment, writeBatch, onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-messaging.js";
 
@@ -411,12 +461,12 @@ const provider = new GoogleAuthProvider();
   }
 
   // ---------- TRAO ĐỔI / BÌNH LUẬN ----------
-  function commentBtnHtml(reportId, r){
+  function commentBtnHtml(reportId, r, big){
     var cnt = Number(r.commentCount) || 0;
     var read = (state.myCommentReads && state.myCommentReads[reportId]) || 0;
     var unread = Math.max(0, cnt - read);
     var title = r.categoryName || "";
-    return '<button type="button" class="icon-btn commentBtn" title="Trao đổi" data-id="'+esc(reportId)+'" data-title="'+esc(title)+'">💬' +
+    return '<button type="button" class="'+(big ? "act-btn chat" : "icon-btn")+' commentBtn" title="Trao đổi" data-id="'+esc(reportId)+'" data-title="'+esc(title)+'">💬' + (big ? ' Trao đổi' : '') + (cnt ? ' ('+cnt+')' : '') +
       (unread > 0 ? '<span class="cbadge">'+(unread > 99 ? "99+" : unread)+'</span>' : '') +
       '</button>';
   }
@@ -677,7 +727,10 @@ const provider = new GoogleAuthProvider();
     try {
       var meSnap = await getDoc(doc(db, "users", state.myId));
       state.myCommentReads = (meSnap.exists() && meSnap.data().commentReads) || {};
-    } catch(e){ state.myCommentReads = {}; }
+      state.myAnnReads = (meSnap.exists() && meSnap.data().annReads) || {};
+    } catch(e){ state.myCommentReads = {}; state.myAnnReads = {}; }
+    watchAnnouncements();
+    renderTopBanners();
 
     startCommentWatchers();
     watchMyAssignment();
@@ -694,6 +747,7 @@ const provider = new GoogleAuthProvider();
     renderPlanView();
     renderDashboardView();
     renderAdminView();
+    try { renderAdminExtras(); } catch(e){ console.log(e); }
     $("notifBell").onclick = function(e){ e.stopPropagation(); toggleNotifPanel(); };
     openDeepLinkedComment();
   });
@@ -708,6 +762,8 @@ const provider = new GoogleAuthProvider();
         $("view-plan").style.display = state.currentTab === "plan" ? "" : "none";
         $("view-dashboard").style.display = state.currentTab === "dashboard" ? "" : "none";
         $("view-admin").style.display = state.currentTab === "admin" ? "" : "none";
+        $("view-comply").style.display = state.currentTab === "comply" ? "" : "none";
+        if (state.currentTab === "comply") renderComplyView();
         if (state.currentTab === "dashboard") refreshDashboard();
         if (state.currentTab === "report") refreshMyEntries();
         if (state.currentTab === "plan") refreshPlan();
@@ -903,8 +959,9 @@ const provider = new GoogleAuthProvider();
       var q = query(collection(db, "reports"), where("userId","==",state.myId), where("date","==",state.reportDate));
       var snap = await getDocs(q);
       if (snap.empty){
-        box.innerHTML = '<div class="empty">Chưa có đầu việc nào trong ngày này.</div>';
+        box.innerHTML = '<div class="empty">Chưa có đầu việc nào trong ngày này.</div><div id="daySubmitBox"></div>';
         if (bannerBox) bannerBox.innerHTML = "";
+        renderDaySubmitBox([]);
         return;
       }
       var docs = [];
@@ -924,56 +981,48 @@ const provider = new GoogleAuthProvider();
       }
 
       var html = '<div class="table-wrap"><table class="entries-table"><thead><tr>' +
-        '<th>#</th><th>Nội dung</th><th>Trạng thái</th><th>Kết quả</th><th></th>' +
+        '<th class="stt">#</th><th>Nội dung</th><th>Kết quả</th>' +
         '</tr></thead><tbody>';
       docs.forEach(function(item, idx){
         var d = item.id, r = item.data;
         var st = STATUS[r.status] || STATUS.pending;
         var isEditing = state.editingRowId === d;
-        var resultText = "-";
+        var resultText = '<span class="rnone">Chưa có kết quả</span>';
         if (r.status === "done"){
           var parts = [];
           if (r.resultDescription) parts.push(esc(r.resultDescription));
           var numsStr = resultNumsHtml(r);
           if (numsStr) parts.push(numsStr);
-          resultText = parts.length ? parts.join("<br>") : "Xong";
+          resultText = '<span class="rtext">' + (parts.length ? parts.join("<br>") : "Xong") + '</span>';
         } else if (r.status === "notdone" && r.reasonNotDone){
-          resultText = "Lý do: " + esc(r.reasonNotDone);
+          resultText = '<span class="rtext">Lý do: ' + esc(r.reasonNotDone) + '</span>';
+        } else if (r.status === "progress"){
+          resultText = '<span class="rnone">Đang làm</span>';
         }
-        html += '<tr>' +
+        html += '<tr class="main-row">' +
           '<td class="stt">'+(idx+1)+'</td>' +
           '<td class="content-cell">' +
             '<b>'+esc(r.categoryName || "")+'</b>' + (r.draft === true ? '<span class="draft-tag">Nháp</span>' : '') +
-            (r.description ? '<div class="cmeta"><b class="k">Mô tả chi tiết:</b>&nbsp;'+esc(r.description)+'</div>' : "") +
+            (r.description ? '<div class="cmeta">'+esc(r.description)+'</div>' : "") +
             extrasLineHtml(r, "cmeta") +
           '</td>' +
-          '<td class="status-cell">' +
-            '<span class="badge '+st.cls+'">'+st.label+'</span>' +
-            '<div class="icon-row">' +
-              '<button class="icon-btn tickDone'+(r.status==="done"?" on-done":"")+'" title="Hoàn thành" data-id="'+esc(d)+'">✅</button>' +
-              '<button class="icon-btn tickProgress'+(r.status==="progress"?" on-progress":"")+'" title="Đang làm" data-id="'+esc(d)+'">🔄</button>' +
-              '<button class="icon-btn tickNotdone'+(r.status==="notdone"?" on-notdone":"")+'" title="Chưa xong" data-id="'+esc(d)+'">❌</button>' +
-              commentBtnHtml(d, r) +
-            '</div>' +
-          '</td>' +
-          '<td class="result-cell">'+resultText+'</td>' +
-          '<td class="del-cell">'+(ownerLocked(r) ? '<span title="Đã gửi - chỉ quản lý mới xoá được">🔒</span>' : '<a data-del="'+esc(d)+'" title="Xóa">✕</a>')+'</td>' +
-        '</tr>';
+          '<td class="result-cell"><span class="badge '+st.cls+'">'+st.label+'</span><div>'+resultText+'</div></td>' +
+        '</tr>' +
+        '<tr class="act-row"><td colspan="3"><div class="act-bar">' +
+          '<button class="act-btn tickDone'+(r.status==="done"?" on-done":"")+'" data-id="'+esc(d)+'">✅ Hoàn thành</button>' +
+          '<button class="act-btn tickProgress'+(r.status==="progress"?" on-progress":"")+'" data-id="'+esc(d)+'">🔄 Đang làm</button>' +
+          '<button class="act-btn tickNotdone'+(r.status==="notdone"?" on-notdone":"")+'" data-id="'+esc(d)+'">❌ Chưa xong</button>' +
+          commentBtnHtml(d, r, true) +
+          (ownerLocked(r) ? '<span class="act-btn lock" title="Đã gửi - chỉ quản lý mới xoá được">🔒</span>' : '<a class="act-btn del" data-del="'+esc(d)+'" title="Xóa">🗑</a>') +
+        '</div></td></tr>';
         if (isEditing){
-          html += '<tr class="inline-form-row"><td colspan="5">' + renderInlineForm(d, r) + '</td></tr>';
+          html += '<tr class="inline-form-row"><td colspan="3">' + renderInlineForm(d, r) + '</td></tr>';
         }
       });
       html += '</tbody></table></div>';
-      var drafts = docs.filter(function(x){ return x.data.draft === true; });
-      var sentTimes = docs.filter(function(x){ return x.data.draft !== true && x.data.submittedAt; }).map(function(x){ return x.data.submittedAt; }).sort();
-      html += '<div class="submit-bar">' + (drafts.length
-        ? '<div class="muted">Có <b>'+drafts.length+'</b> đầu việc đang <b>lưu tạm</b> (chỉ mình bạn thấy). ' +
-            (lockActive() ? 'Sau khi gửi sẽ <b>không sửa/xoá</b> được nội dung, vẫn cập nhật được kết quả.' : 'Từ 01/10: sau khi gửi sẽ không sửa/xoá được nội dung, vẫn cập nhật được kết quả.') + '</div>' +
-          '<button class="btn" id="sendDayBtn" style="width:100%;margin-top:8px">📤 Gửi báo cáo ngày ('+drafts.length+' đầu việc)</button>'
-        : '<div class="sent-ok">✅ Đã gửi báo cáo'+(sentTimes.length ? ' lúc '+esc(fmtTimeShort(sentTimes[sentTimes.length-1])) : '')+'. Bạn vẫn cập nhật được kết quả từng việc.</div>') + '</div>';
+      html += '<div id="daySubmitBox"></div>';
       box.innerHTML = html;
-      var sendBtn = $("sendDayBtn");
-      if (sendBtn) sendBtn.addEventListener("click", function(){ sendDayReport(drafts.map(function(x){ return x.id; })); });
+      renderDaySubmitBox(docs);
 
       box.querySelectorAll(".tickDone").forEach(function(b){ b.addEventListener("click", function(){ openInlineForm(b.dataset.id, "done"); }); });
       box.querySelectorAll(".tickProgress").forEach(function(b){ b.addEventListener("click", function(){ setStatus(b.dataset.id, "progress", {}); }); });
@@ -983,7 +1032,7 @@ const provider = new GoogleAuthProvider();
           armConfirm(a, async function(){
             await deleteDoc(doc(db, "reports", a.dataset.del));
             refreshMyEntries();
-          }, "Bấm lần nữa để xóa");
+          }, "Xoá?");
         });
       });
       wireInlineForm(box);
@@ -992,15 +1041,157 @@ const provider = new GoogleAuthProvider();
     }
   }
 
-  async function sendDayReport(ids){
+  // ================= NỘP BÁO CÁO NGÀY =================
+  // Báo cáo ngày D = kết quả ngày D + kế hoạch ngày làm việc tiếp theo (T7 -> T2).
+  // Hạn: 20:00 ngày D (T7: 20:00 Chủ nhật). Gửi bù trước 12:00 trưa hôm sau = trễ; sau đó = chưa gửi.
+  var COMPLY_START = "2026-10-01";
+  var FINE_DAY = 200000, FINE_WEEK = 500000;
+  function dowOf(iso){ return new Date(iso+"T00:00:00").getDay(); } // 0 = Chủ nhật
+  function nextWorkday(iso){ var n = addDaysIso(iso, 1); return dowOf(n) === 0 ? addDaysIso(n, 1) : n; }
+  function prevWorkday(iso){ var p = addDaysIso(iso, -1); return dowOf(p) === 0 ? addDaysIso(p, -1) : p; }
+  function atLocal(iso, h, m){ var d = new Date(iso+"T00:00:00"); d.setHours(h, m||0, 0, 0); return d.getTime(); }
+  function dayDeadlineDate(iso){ return dowOf(iso) === 6 ? addDaysIso(iso, 1) : iso; }
+  function dayDeadlineMs(iso){ return atLocal(dayDeadlineDate(iso), 20, 0); }
+  function dayCutoffMs(iso){ return atLocal(addDaysIso(dayDeadlineDate(iso), 1), 12, 0); }
+  function weekDeadlineMs(ws){ return atLocal(addDaysIso(ws, -1), 20, 0); }   // KH tuần ws: hạn 20:00 CN trước đó
+  function weekCutoffMs(ws){ return atLocal(ws, 12, 0); }
+  function tsMs(v){
+    if (!v) return 0;
+    if (typeof v.toMillis === "function") return v.toMillis();
+    if (typeof v === "number") return v;
+    if (v instanceof Date) return v.getTime();
+    var t = Date.parse(v); return isNaN(t) ? 0 : t;
+  }
+  function fmtMs(ms){ if (!ms) return ""; var d = new Date(ms); return pad2(d.getHours())+":"+pad2(d.getMinutes())+" "+pad2(d.getDate())+"/"+pad2(d.getMonth()+1); }
+  function dowLabel(iso){ var w = dowOf(iso); return w === 0 ? "CN" : "T" + (w+1); }
+  function subState(sub, deadline, cutoff){
+    var t = sub ? tsMs(sub.firstSubmittedAt || sub.submittedAt) : 0;
+    if (t) return t <= deadline ? "DungGio" : (t <= cutoff ? "Tre" : "ChuaGui");
+    return Date.now() > cutoff ? "ChuaGui" : "Cho";
+  }
+  var CP_LABEL = { DungGio: "Đúng giờ", Tre: "Trễ", ChuaGui: "Chưa gửi", NghiPhep: "Nghỉ phép", LoaiTru: "Loại trừ", Cho: "Chưa đến hạn" };
+  function daySubId(uid, iso){ return uid + "_" + iso; }
+  function viewInfoHtml(sub){
+    if (!sub) return "";
+    var h = "";
+    if (sub.leadViewedAt) h += '<span class="chip info">👁 Sub '+esc(empName(sub.leadViewedBy))+' đã xem '+esc(fmtMs(tsMs(sub.leadViewedAt)))+'</span>';
+    if (sub.adminViewedAt) h += '<span class="chip info">👁 GDKD đã xem '+esc(fmtMs(tsMs(sub.adminViewedAt)))+'</span>';
+    if (sub.status === "approved") h += '<span class="chip ok">✅ '+esc(empName(sub.approvedBy))+' đã duyệt</span>';
+    if (sub.status === "returned") h += '<span class="chip warn">↩️ Bị trả lại</span>';
+    if (!sub.leadViewedAt && !sub.adminViewedAt && sub.status === "sent") h += '<span class="chip">⏳ Quản lý chưa xem</span>';
+    return h;
+  }
+
+  async function renderDaySubmitBox(docs){
+    var box = $("daySubmitBox");
+    if (!box) return;
+    var D = state.reportDate, today = todayStr();
+    if (dowOf(D) === 0){
+      box.innerHTML = '<div class="ds-card"><div class="ds-title">Chủ nhật nghỉ 🌿</div><div class="ds-line">Kết quả <b>Thứ 7</b> và kế hoạch <b>Thứ 2</b> gửi trước <b>20:00 hôm nay</b>.</div>' +
+        '<button class="btn" id="dsGoSat" style="width:100%;margin-top:8px">Mở báo cáo Thứ 7 ('+fmtDateVN(addDaysIso(D,-1)).slice(0,5)+')</button></div>';
+      $("dsGoSat").onclick = function(){ gotoReportDate(addDaysIso(D,-1)); };
+      return;
+    }
+    if (D > today){
+      var P = prevWorkday(D);
+      box.innerHTML = '<div class="ds-card"><div class="ds-line">📅 Đây là <b>kế hoạch '+dowLabel(D)+' '+fmtDateVN(D).slice(0,5)+'</b>. Kế hoạch này được gửi <b>cùng báo cáo ngày '+dowLabel(P)+' '+fmtDateVN(P).slice(0,5)+'</b>.</div>' +
+        (P >= today ? '<button class="btn" id="dsGoPrev" style="width:100%;margin-top:8px">Quay lại báo cáo '+dowLabel(P)+' '+fmtDateVN(P).slice(0,5)+' để gửi</button>' : '') + '</div>';
+      if ($("dsGoPrev")) $("dsGoPrev").onclick = function(){ gotoReportDate(P); };
+      return;
+    }
+    var N = nextWorkday(D);
+    var planDocs = [], sub = null;
+    try {
+      var ps = await getDocs(query(collection(db, "reports"), where("userId","==",state.myId), where("date","==",N)));
+      ps.forEach(function(d){ planDocs.push({ id: d.id, data: d.data() }); });
+      var ss = await getDoc(doc(db, "daySubs", daySubId(state.myId, D)));
+      if (ss.exists()) sub = ss.data();
+    } catch(e){}
+    if (state.reportDate !== D || !$("daySubmitBox")) return;
+    var total = docs.length;
+    var withResult = docs.filter(function(x){ return x.data.status && x.data.status !== "pending"; }).length;
+    var drafts = docs.filter(function(x){ return x.data.draft === true; }).concat(planDocs.filter(function(x){ return x.data.draft === true; }));
+    var deadline = dayDeadlineMs(D), cutoff = dayCutoffMs(D), now = Date.now();
+    var ddl = (dowOf(D) === 6 ? "CN " + fmtDateVN(addDaysIso(D,1)).slice(0,5) : "hôm " + (D === today ? "nay" : fmtDateVN(D).slice(0,5)));
+    var cls = "ds-card", head, stLine = "";
+    var st = sub ? subState(sub, deadline, cutoff) : null;
+    if (sub && sub.status === "returned"){
+      cls += " returned";
+      head = '↩️ Báo cáo bị trả lại';
+      stLine = '<div class="ds-line"><b>'+esc(empName(sub.returnedBy))+'</b>: '+esc(sub.returnReason||"(không ghi lý do)")+'</div><div class="ds-line">Sửa lại rồi bấm <b>Gửi lại</b> bên dưới.</div>';
+    } else if (sub){
+      head = '✅ Đã gửi báo cáo ngày '+fmtDateVN(D).slice(0,5);
+      stLine = '<div class="ds-line">Gửi lúc <b>'+esc(fmtMs(tsMs(sub.firstSubmittedAt || sub.submittedAt)))+'</b> · <span class="chip '+(st==="DungGio"?"ok":"bad")+'">'+CP_LABEL[st]+'</span></div>' +
+        '<div class="ds-line">'+viewInfoHtml(sub)+'</div>';
+    } else {
+      if (now > deadline) cls += " late";
+      head = '📤 Nộp báo cáo ngày '+fmtDateVN(D).slice(0,5);
+      stLine = '<div class="ds-line">Hạn: <b>20:00 '+ddl+'</b>' +
+        (now > cutoff ? ' · <span class="chip bad">Quá hạn – tính chưa gửi</span>' : now > deadline ? ' · <span class="chip bad">Đã quá 20:00 – gửi ngay (tính trễ)</span>' : '') + '</div>';
+    }
+    var html = '<div class="'+cls+'"><div class="ds-title">'+head+'</div>' + stLine +
+      '<ul class="ds-check">' +
+        '<li><span>'+(total && withResult === total ? "✅" : "⚠️")+' Kết quả '+dowLabel(D)+' '+fmtDateVN(D).slice(0,5)+': <b>'+withResult+'/'+total+'</b> việc đã cập nhật</span></li>' +
+        '<li><span>'+(planDocs.length ? "✅" : "⚠️")+' Kế hoạch '+dowLabel(N)+' '+fmtDateVN(N).slice(0,5)+': <b>'+planDocs.length+'</b> đầu việc</span>' +
+          '<button class="btn secondary small" id="dsGoNext">'+(planDocs.length ? "Xem" : "➕ Lên kế hoạch")+'</button></li>' +
+      '</ul>';
+    var needSend = !sub || sub.status === "returned" || drafts.length > 0;
+    if (needSend){
+      var label = sub ? (sub.status === "returned" ? "📤 Gửi lại báo cáo" : "📤 Gửi bổ sung ("+drafts.length+" đầu việc mới)") : "📤 Gửi báo cáo ngày " + fmtDateVN(D).slice(0,5);
+      html += '<div class="muted" style="margin-top:8px">Gửi 1 lần gồm: kết quả '+fmtDateVN(D).slice(0,5)+' + kế hoạch '+fmtDateVN(N).slice(0,5)+'. ' +
+        (lockActive() ? 'Sau khi gửi <b>không sửa/xoá nội dung</b> (vẫn cập nhật được kết quả).' : 'Từ 01/10: sau khi gửi sẽ không sửa/xoá nội dung.') + '</div>' +
+        '<button class="btn" id="sendDayBtn" style="width:100%;margin-top:8px">'+label+'</button>';
+    }
+    html += '</div>';
+    box.innerHTML = html;
+    $("dsGoNext").onclick = function(){ gotoReportDate(N); };
+    var sb = $("sendDayBtn");
+    if (sb){
+      var pendingCnt = total - withResult;
+      var go = function(){ sendDayReport(D, N, docs, planDocs, sub); };
+      if (!total && !planDocs.length){
+        sb.onclick = function(){ showToast("Chưa có đầu việc nào. Thêm kết quả hôm nay hoặc kế hoạch ngày mai trước khi gửi.", true); };
+      } else if (pendingCnt > 0 || !planDocs.length){
+        sb.onclick = function(){
+          armConfirm(sb, go, (pendingCnt > 0 ? "Còn "+pendingCnt+" việc chưa có kết quả" : "Chưa có kế hoạch ngày mai") + " – bấm lần nữa để vẫn gửi");
+        };
+      } else sb.onclick = go;
+    }
+  }
+
+  function gotoReportDate(iso){
+    state.reportDate = iso;
+    if ($("rDate")) $("rDate").value = iso;
+    if ($("rDateLabel")) $("rDateLabel").textContent = fmtDateVN(iso);
+    refreshMyEntries();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function sendDayReport(D, N, docs, planDocs, sub){
     var b = $("sendDayBtn");
     if (b){ b.disabled = true; b.textContent = "Đang gửi..."; }
     try {
-      var now = new Date().toISOString();
+      var nowIso = new Date().toISOString();
       var batch = writeBatch(db);
-      ids.forEach(function(id){ batch.update(doc(db, "reports", id), { draft: false, submittedAt: now, updatedAt: now }); });
+      docs.concat(planDocs).forEach(function(x){
+        if (x.data.draft === true) batch.update(doc(db, "reports", x.id), { draft: false, submittedAt: nowIso, updatedAt: nowIso });
+      });
       await batch.commit();
-      showToast("📤 Đã gửi báo cáo ngày " + fmtDateVN(state.reportDate) + " - nhóm Sub sẽ nhận thông báo");
+      batch = writeBatch(db);
+      var assign = state.team[state.myId] || null;
+      var ref = doc(db, "daySubs", daySubId(state.myId, D));
+      var base = { status: "sent", submittedAt: serverTimestamp(), count: docs.length, planCount: planDocs.length,
+        subId: assign ? assign.subId : null, subName: assign ? assign.subName : null };
+      if (sub){
+        base.resendCount = increment(1);
+        batch.update(ref, base);
+      } else {
+        base.userId = state.myId; base.date = D; base.planDate = N; base.resendCount = 0;
+        base.firstSubmittedAt = serverTimestamp();
+        batch.set(ref, base);
+      }
+      try { await batch.commit(); } catch(e2){ console.log("daySubs", e2); }
+      showToast("📤 Đã gửi báo cáo ngày " + fmtDateVN(D) + " - Sub và GDKD sẽ nhận thông báo");
     } catch(e){
       showToast("Gửi thất bại: " + (e && e.message ? e.message : ""), true);
     }
@@ -1169,16 +1360,26 @@ const provider = new GoogleAuthProvider();
         }));
         snaps.forEach(function(sn){ sn.forEach(function(d){ var r = d.data(); r.id = d.id; reports.push(r); }); });
       }
-      // Bản nháp (lưu tạm, chưa gửi) không đưa lên Dashboard
-      reports = reports.filter(function(r){ return r.draft !== true; });
+      // Bản nháp (lưu tạm): GDKD và Quản lý Sub vẫn thấy (đánh dấu "Nháp", không tính vào số liệu)
+      var seeDrafts = state.dashMode === "day" && (state.isAdmin || amLead());
+      reports = reports.filter(function(r){ return r.draft !== true || (seeDrafts && r.userId !== state.myId); });
+      state.dashSubs = {};
+      if (state.dashMode === "day"){
+        await ensureAllUsers();
+        var sq = state.isAdmin ? query(collection(db, "daySubs"), where("date","==",state.dashDate))
+          : (mySubId() ? query(collection(db, "daySubs"), where("subId","==",mySubId()), where("date","==",state.dashDate))
+                       : query(collection(db, "daySubs"), where("userId","==",state.myId), where("date","==",state.dashDate)));
+        try { var ss = await getDocs(sq); ss.forEach(function(d){ var x = d.data(); x.id = d.id; state.dashSubs[x.userId] = x; }); } catch(e){}
+      }
     } catch(e){
       box.innerHTML = '<div class="card"><div class="empty">Lỗi tải dữ liệu: '+esc(e.message||"")+'</div></div>';
       return;
     }
     state.dashReports = reports;
+    var real = reports.filter(function(r){ return r.draft !== true; });
     if (state.dashMode === "day") renderDayDashboard(reports);
-    else renderRangeDashboard(reports);
-    renderDashCharts(reports);
+    else renderRangeDashboard(real);
+    renderDashCharts(real);
   }
 
   function exportDashboardExcel(){
@@ -1255,30 +1456,31 @@ const provider = new GoogleAuthProvider();
     return s;
   }
 
-  function statBlockHtml(s){
+  function statBlockHtml(s, scope){
+    var sc = ' data-scope="'+esc(scope||"all")+'"';
     var moMoiBreakdown = Object.keys(s.moMoiByType).map(function(k){ return k+": "+s.moMoiByType[k]; }).join(" · ");
-    return '<h3 style="margin:0 0 8px">Tiến độ công việc</h3>' +
+    return '<h3 style="margin:0 0 8px">Tiến độ công việc <span class="muted" style="font-weight:400">(bấm vào ô để xem ai)</span></h3>' +
       '<div class="stat-grid">' +
-        '<div class="stat"><div class="num">'+s.total+'</div><div class="label">Tổng đầu việc</div></div>' +
-        '<div class="stat"><div class="num">'+s.done+'</div><div class="label">Hoàn thành</div></div>' +
-        '<div class="stat"><div class="num">'+s.progress+'</div><div class="label">Đang tiến hành</div></div>' +
+        '<div class="stat" data-f="total"'+sc+'><div class="num">'+s.total+'</div><div class="label">Tổng đầu việc</div></div>' +
+        '<div class="stat" data-f="done"'+sc+'><div class="num">'+s.done+'</div><div class="label">Hoàn thành</div></div>' +
+        '<div class="stat" data-f="progress"'+sc+'><div class="num">'+s.progress+'</div><div class="label">Đang tiến hành</div></div>' +
       '</div>' +
       '<div class="metric-grid" style="grid-template-columns: repeat(2,1fr)">' +
-        '<div class="metric"><div class="num">'+s.notdone+'</div><div class="label">Chưa hoàn thành</div></div>' +
-        '<div class="metric"><div class="num">'+s.pending+'</div><div class="label">Chưa cập nhật</div></div>' +
+        '<div class="metric" data-f="notdone"'+sc+'><div class="num">'+s.notdone+'</div><div class="label">Chưa hoàn thành</div></div>' +
+        '<div class="metric" data-f="pending"'+sc+'><div class="num">'+s.pending+'</div><div class="label">Chưa cập nhật</div></div>' +
       '</div>' +
       '<h3 style="margin:14px 0 8px">Kết quả công việc</h3>' +
       '<div class="metric-grid">' +
-        '<div class="metric"><div class="num">'+fmtNum(s.sanLuong)+'</div><div class="label">Sản lượng (tấn)</div></div>' +
-        '<div class="metric"><div class="num">'+fmtNum(s.doanhThu)+'</div><div class="label">Doanh thu (tr)</div></div>' +
-        '<div class="metric"><div class="num">'+fmtNum(s.conGiong)+' con</div><div class="label">Con giống</div></div>' +
+        '<div class="metric" data-f="sanLuong"'+sc+'><div class="num">'+fmtNum(s.sanLuong)+'</div><div class="label">Sản lượng (tấn)</div></div>' +
+        '<div class="metric" data-f="doanhThu"'+sc+'><div class="num">'+fmtNum(s.doanhThu)+'</div><div class="label">Doanh thu (tr)</div></div>' +
+        '<div class="metric" data-f="conGiong"'+sc+'><div class="num">'+fmtNum(s.conGiong)+' con</div><div class="label">Con giống</div></div>' +
       '</div>' +
       (s.moMoiCount ? '<div class="metric-grid" style="margin-top:8px">' +
-        '<div class="metric" style="grid-column: span 3"><div class="num">'+s.moMoiCount+'</div><div class="label">Mở mới'+(moMoiBreakdown?" — "+esc(moMoiBreakdown):"")+'</div></div>' +
+        '<div class="metric" data-f="moMoi"'+sc+' style="grid-column: span 3"><div class="num">'+s.moMoiCount+'</div><div class="label">Mở mới'+(moMoiBreakdown?" — "+esc(moMoiBreakdown):"")+'</div></div>' +
       '</div>' : "");
   }
 
-  function empName(uid){ return (state.allUsers[uid] && state.allUsers[uid].name) || "Nhân viên"; }
+  function empName(uid){ var u = state.allUsers[uid]; return (u && (u.fullName || u.name)) || "Nhân viên"; }
 
   // Gộp Với ai / Ở đâu / Tại sao thành 1 dòng gọn thay vì xuống dòng riêng, để bảng không bị quá dài.
   // Dùng icon thay vì nhãn chữ, và &nbsp; nối icon với chữ đầu tiên để tránh bị tách dòng giữa nhãn và giá trị khi cột hẹp.
@@ -1340,17 +1542,71 @@ const provider = new GoogleAuthProvider();
     return parts.join(" · ");
   }
 
+  // Danh sách người trong phạm vi xem (GDKD: tất cả; Sub: cả Sub)
+  function scopeMembers(){
+    return Object.keys(state.team).filter(function(u){
+      if (state.isAdmin) return true;
+      return mySubId() && state.team[u].subId === mySubId();
+    });
+  }
+  function canReview(uid){
+    if (!uid || uid === state.myId) return false;
+    if (state.isAdmin) return true;
+    var t = state.team[uid];
+    return amLead() && !!t && t.subId === mySubId();
+  }
+  function empChipsHtml(uid, D){
+    var sub = state.dashSubs[uid];
+    if (!sub) return '<span class="chip bad">Chưa gửi</span>';
+    var st = subState(sub, dayDeadlineMs(D), dayCutoffMs(D));
+    return '<span class="chip '+(st==="DungGio"?"ok":"bad")+'">📤 '+esc(fmtMs(tsMs(sub.firstSubmittedAt||sub.submittedAt)).slice(0,5))+(st==="Tre"?" trễ":"")+'</span>' +
+      (sub.status === "approved" ? '<span class="chip ok">✅ Duyệt</span>' : sub.status === "returned" ? '<span class="chip warn">↩️ Trả lại</span>' :
+        (sub.leadViewedAt ? '<span class="chip info">👁 Sub đã xem</span>' : '<span class="chip">⏳ Sub chưa xem</span>'));
+  }
+  function reviewBarHtml(uid){
+    var sub = state.dashSubs[uid];
+    var h = '';
+    if (sub) h += '<div class="muted" style="margin:4px 0">'+viewInfoHtml(sub)+(sub.status==="returned" && sub.returnReason ? '<div>Lý do trả lại: '+esc(sub.returnReason)+'</div>' : '')+'</div>';
+    if (sub && canReview(uid) && sub.status !== "returned"){
+      h += '<div class="rv-bar">' +
+        (sub.status !== "approved" ? '<button class="btn small rvApprove" data-uid="'+esc(uid)+'">✅ Duyệt</button>' : '') +
+        '<button class="btn small secondary rvReturn" data-uid="'+esc(uid)+'">↩️ Trả lại</button></div>' +
+        '<div class="rv-return" data-uid="'+esc(uid)+'" style="display:none"><input type="text" class="rvReason" placeholder="Lý do trả lại (bắt buộc)..."><button class="btn small danger rvReturnGo" data-uid="'+esc(uid)+'" style="margin-top:6px;width:100%">Xác nhận trả lại</button></div>';
+    }
+    return h;
+  }
+
   function renderDayDashboard(reports){
     var box = $("dashResult");
-    var overall = summarize(reports);
+    var D = state.dashDate;
+    var real = reports.filter(function(r){ return r.draft !== true; });
+    var overall = summarize(real);
     var bySub = {};
     reports.forEach(function(r){
       var key = r.subId || "__none__";
       if (!bySub[key]) bySub[key] = { name: r.subName || "Chưa gán Sub", items: [] };
       bySub[key].items.push(r);
     });
-
-    var html = '<div class="card"><h2>'+esc(scopeLabel())+' - '+fmtDateVN(state.dashDate)+'</h2>' + statBlockHtml(overall) + '</div>';
+    // Người trong phạm vi chưa gửi báo cáo ngày D
+    var members = scopeMembers();
+    var notSent = [], drafting = [];
+    if (dowOf(D) !== 0){
+      members.forEach(function(u){
+        if (state.dashSubs[u]) return;
+        if (reports.some(function(r){ return r.userId === u && r.draft === true; })) drafting.push(u);
+        else notSent.push(u);
+      });
+    }
+    var byName = function(a,b){ return empName(a).localeCompare(empName(b)); };
+    var html = '<div class="card"><h2>'+esc(scopeLabel())+' - '+fmtDateVN(D)+'</h2>';
+    if (dowOf(D) !== 0 && members.length){
+      var sentN = members.length - notSent.length - drafting.length;
+      html += '<div class="ds-line"><b>Đã gửi báo cáo: '+sentN+'/'+members.length+'</b> <span class="muted">(hạn 20:00'+(dowOf(D)===6?" CN":"")+')</span></div>' +
+        (drafting.length ? '<div class="ds-line">📝 Đang lưu tạm (chưa gửi): '+drafting.sort(byName).map(function(u){ return '<span class="chip warn">'+esc(empName(u))+'</span>'; }).join("")+'</div>' : '') +
+        (notSent.length ? '<div class="ds-line">⛔ Chưa có gì: '+notSent.sort(byName).map(function(u){ return '<span class="chip bad">'+esc(empName(u))+'</span>'; }).join("")+'</div>' : '') +
+        '<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">';
+    }
+    html += statBlockHtml(overall) + '</div>';
     var subKeys = Object.keys(bySub);
     if (!subKeys.length){
       html += '<div class="card"><div class="empty">Chưa có báo cáo nào trong ngày này.</div></div>';
@@ -1358,37 +1614,90 @@ const provider = new GoogleAuthProvider();
       html += '<div class="card"><h2>Chi tiết theo Sub</h2>';
       subKeys.forEach(function(key){
         var sub = bySub[key];
-        var s = summarize(sub.items);
+        var s = summarize(sub.items.filter(function(r){ return r.draft !== true; }));
         var byEmp = {};
         sub.items.forEach(function(r){
           var uid = r.userId || "__unknown__";
           if (!byEmp[uid]) byEmp[uid] = [];
           byEmp[uid].push(r);
         });
-        var empHtml = Object.keys(byEmp).map(function(uid){
+        var empHtml = Object.keys(byEmp).sort(byName).map(function(uid){
           var items = byEmp[uid];
-          var es = summarize(items);
+          var es = summarize(items.filter(function(r){ return r.draft !== true; }));
           var rows = items.map(function(r){
             var st = STATUS[r.status] || STATUS.pending;
             var numsHtml = resultNumsHtml(r);
-            return '<div class="entry"><div class="top"><b>'+esc(r.categoryName || "")+'</b><span style="display:flex;align-items:center;gap:6px"><span class="badge '+st.cls+'">'+st.label+'</span>'+(r.id?commentBtnHtml(r.id, r):"")+manageBtnsHtml(r)+'</span></div>' +
+            return '<div class="entry'+(r.draft===true?" is-draft":"")+'"><div class="top"><b>'+esc(r.categoryName || "")+(r.draft===true?'<span class="draft-tag">Nháp</span>':'')+'</b><span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end"><span class="badge '+st.cls+'">'+st.label+'</span>'+(r.id?commentBtnHtml(r.id, r):"")+manageBtnsHtml(r)+'</span></div>' +
               (r.description ? '<div class="meta">Mô tả chi tiết: '+esc(r.description)+'</div>' : "") +
               extrasLineHtml(r, "meta") +
               (r.status === "done" && r.resultDescription ? '<div class="meta">Kết quả: '+esc(r.resultDescription)+'</div>' : "") +
               (numsHtml ? '<div class="meta">'+numsHtml+'</div>' : "") +
               (r.status === "notdone" && r.reasonNotDone ? '<div class="meta">Lý do: '+esc(r.reasonNotDone)+'</div>' : "") + '</div>';
           }).join("");
-          return '<details class="sales-block"><summary><span>'+esc(empName(uid))+'</span><span>'+es.total+' việc ('+es.done+' xong)</span></summary><div class="body">'+rows+'</div></details>';
+          return '<details class="sales-block" data-uid="'+esc(uid)+'"><summary><span>'+esc(empName(uid))+'<br><span class="muted">'+es.total+' việc ('+es.done+' xong)</span></span><span class="chips">'+empChipsHtml(uid, D)+'</span></summary><div class="body">'+reviewBarHtml(uid)+rows+'</div></details>';
         }).join("");
         html += '<details class="sub-block"><summary><span>'+esc(sub.name)+'</span>' +
           '<span class="badge progress">'+s.total+' việc</span></summary>' +
-          '<div class="body">' + statBlockHtml(s) +
+          '<div class="body">' + statBlockHtml(s, key) +
           '<h3 style="margin-top:12px">Theo nhân viên</h3>' + empHtml +
           '</div></details>';
       });
       html += '</div>';
     }
     box.innerHTML = html;
+    box.querySelectorAll("details.sales-block").forEach(function(det){
+      det.addEventListener("toggle", function(){ if (det.open) markDayViewed(det.dataset.uid, D); });
+    });
+    box.querySelectorAll(".rvApprove").forEach(function(b){ b.onclick = function(){ reviewDay(b.dataset.uid, D, "approved", ""); }; });
+    box.querySelectorAll(".rvReturn").forEach(function(b){ b.onclick = function(){
+      var f = box.querySelector('.rv-return[data-uid="'+CSS.escape(b.dataset.uid)+'"]'); if (f){ f.style.display = ""; f.querySelector("input").focus(); }
+    }; });
+    box.querySelectorAll(".rvReturnGo").forEach(function(b){ b.onclick = function(){
+      var inp = b.parentNode.querySelector(".rvReason"); var why = (inp.value||"").trim();
+      if (!why){ showToast("Nhập lý do trả lại để nhân viên biết cần sửa gì.", true); return; }
+      reviewDay(b.dataset.uid, D, "returned", why);
+    }; });
+  }
+
+  // Ghi nhận GDKD / Quản lý Sub đã xem báo cáo (khi mở khối của nhân viên)
+  async function markDayViewed(uid, D){
+    var sub = state.dashSubs[uid];
+    if (!sub || uid === state.myId) return;
+    var t = state.team[uid] || {}, upd = {};
+    if (state.isAdmin && !sub.adminViewedAt){ upd.adminViewedAt = serverTimestamp(); upd.adminViewedBy = state.myId; }
+    if (amLead() && t.subId && t.subId === mySubId() && !sub.leadViewedAt){ upd.leadViewedAt = serverTimestamp(); upd.leadViewedBy = state.myId; }
+    if (!Object.keys(upd).length) return;
+    try {
+      await updateDoc(doc(db, "daySubs", daySubId(uid, D)), upd);
+      var nowMs = Date.now();
+      if (upd.adminViewedBy){ sub.adminViewedAt = nowMs; sub.adminViewedBy = state.myId; }
+      if (upd.leadViewedBy){ sub.leadViewedAt = nowMs; sub.leadViewedBy = state.myId; }
+    } catch(e){ console.log("markViewed", e); }
+  }
+
+  async function reviewDay(uid, D, status, reason){
+    var sub = state.dashSubs[uid];
+    if (!sub) return;
+    try {
+      var batch = writeBatch(db);
+      var upd = { status: status };
+      if (status === "approved"){ upd.approvedAt = serverTimestamp(); upd.approvedBy = state.myId; }
+      else { upd.returnedAt = serverTimestamp(); upd.returnedBy = state.myId; upd.returnReason = reason; }
+      var t = state.team[uid] || {};
+      if (!sub.leadViewedAt && amLead() && t.subId === mySubId()){ upd.leadViewedAt = serverTimestamp(); upd.leadViewedBy = state.myId; }
+      batch.update(doc(db, "daySubs", daySubId(uid, D)), upd);
+      if (status === "returned"){
+        // Mở lại cho nhân viên sửa: đưa các đầu việc ngày D và kế hoạch ngày kế tiếp về "lưu tạm"
+        var dates = [D, sub.planDate || nextWorkday(D)];
+        for (var i = 0; i < dates.length; i++){
+          var qs = await getDocs(query(collection(db, "reports"), where("userId","==",uid), where("date","==",dates[i])));
+          qs.forEach(function(d){ if (d.data().draft !== true) batch.update(doc(db, "reports", d.id), { draft: true, updatedAt: new Date().toISOString() }); });
+        }
+      }
+      await batch.commit();
+      showToast(status === "approved" ? "✅ Đã duyệt báo cáo của " + empName(uid) : "↩️ Đã trả lại báo cáo cho " + empName(uid));
+      refreshDashboard();
+    } catch(e){ showToast("Lỗi: " + (e.message||""), true); }
   }
 
   function scopeLabel(){
@@ -1531,6 +1840,7 @@ const provider = new GoogleAuthProvider();
       return;
     }
     $("view-admin").innerHTML =
+      '<div id="adminExtras"></div>' +
       '<div class="card">' +
         '<h2>Nhóm Sub (vùng)</h2>' +
         '<div id="subList"></div>' +
@@ -1972,8 +2282,8 @@ const provider = new GoogleAuthProvider();
     }
     $("view-plan").innerHTML =
       '<div class="card">' +
-        '<h2>🗓️ Kế hoạch tuần <span class="tag">bản thử</span></h2>' +
-        '<div class="muted">Lên kế hoạch cho cả tuần. App tự đối chiếu từng ngày với báo cáo ngày để biết việc nào đã làm, việc nào chưa.</div>' +
+        '<h2>🗓️ Kế hoạch tuần</h2>' +
+        '<div class="muted">Lên kế hoạch cả tuần → <b>Gửi trước 20:00 Chủ nhật</b>. Sub/GDKD xem, duyệt hoặc trả lại. App tự đối chiếu từng ngày với báo cáo ngày.</div>' +
         '<div class="week-nav"><button class="btn secondary small" id="plPrev">◀</button><b id="plWeekLabel"></b><button class="btn secondary small" id="plNext">▶</button></div>' +
         '<button class="btn secondary small" id="plThisWeek" style="width:100%">Về tuần này</button>' +
         userPicker +
@@ -2020,6 +2330,7 @@ const provider = new GoogleAuthProvider();
       return;
     }
     state.planData = plan;
+    if (ownerPlanLocked(plan, uid)){ canEdit = false; $("plAddCard").style.display = "none"; }
     renderPlanResult(plan.items || [], reports, days, canEdit);
   }
 
@@ -2055,7 +2366,9 @@ const provider = new GoogleAuthProvider();
     var extra = reports.filter(function(r){ return !m.used[r.id]; });
     var pct = total ? Math.round(done*100/total) : 0;
 
-    var html = '<div class="card"><h2>Kết quả thực hiện tuần</h2>' +
+    var puid = state.planUser || state.myId, pdata = state.planData || {};
+    var html = '<div class="card">' + planStatusHtml(pdata, puid, items.length) + '</div>' +
+      '<div class="card"><h2>Kết quả thực hiện tuần</h2>' +
       '<div class="stat-grid">' +
         '<div class="stat"><div class="num">'+total+'</div><div class="label">Việc kế hoạch</div></div>' +
         '<div class="stat"><div class="num">'+reported+'</div><div class="label">Đã có báo cáo</div></div>' +
@@ -2102,6 +2415,7 @@ const provider = new GoogleAuthProvider();
     });
     html += '</div>';
     $("plResult").innerHTML = html;
+    wirePlanStatus(pdata, puid, items.length);
 
     $("plResult").querySelectorAll("[data-plan-del]").forEach(function(b){
       b.onclick = function(){ deletePlanItem(b.dataset.planDel); };
@@ -2272,6 +2586,481 @@ const provider = new GoogleAuthProvider();
     state.dashCharts = charts;
   }
 
+  // ================= BANNER ĐẦU TRANG: BẬT THÔNG BÁO + THÔNG BÁO CHUNG =================
+  function renderTopBanners(){
+    var box = $("topBanners");
+    if (!box) return;
+    var h = "";
+    var supported = ("Notification" in window) && ("serviceWorker" in navigator);
+    if (state.pushOk === undefined) state.pushOk = supported && Notification.permission === "granted";
+    if (!state.pushOk){
+      if (!supported) h += '<div class="tb push"><span>📲 Máy này chưa nhận được thông báo. <b>iPhone</b>: mở bằng Safari → nút Chia sẻ → <b>Thêm vào MH chính</b>, rồi mở app từ biểu tượng đó.</span></div>';
+      else if (Notification.permission === "denied") h += '<div class="tb push"><span>🔕 Thông báo đang bị <b>CHẶN</b>. Vào Cài đặt trình duyệt/điện thoại → cho phép Thông báo cho trang này, rồi mở lại app.</span></div>';
+      else h += '<div class="tb push" id="tbPush"><span>🔔 Bạn <b>chưa bật thông báo</b> – sẽ không nhận được nhắc nộp báo cáo, trao đổi, duyệt/trả lại.</span><button class="btn small" type="button">Bật ngay</button></div>';
+    }
+    var ann = state.latestAnn;
+    if (ann && !(state.myAnnReads || {})[ann.id]){
+      h += '<div class="tb ann"><div><b>📢 '+esc(ann.title || "Thông báo")+'</b><div class="ann-body">'+esc(ann.body || "")+'</div>' +
+        '<div class="muted">'+esc(ann.createdByName || "GDKD")+(tsMs(ann.createdAt) ? ' · '+esc(fmtMs(tsMs(ann.createdAt))) : '')+'</div></div>' +
+        '<button class="btn small" id="annOk" type="button">Đã đọc</button></div>';
+    }
+    box.innerHTML = h;
+    if ($("tbPush")) $("tbPush").onclick = function(){ var pb = document.getElementById("pushBtn"); if (pb) pb.click(); };
+    if ($("annOk")) $("annOk").onclick = async function(){
+      var id = ann.id, now = new Date().toISOString();
+      state.myAnnReads = state.myAnnReads || {};
+      state.myAnnReads[id] = now;
+      renderTopBanners();
+      try { var upd = {}; upd["annReads." + id] = now; await updateDoc(doc(db, "users", state.myId), upd); } catch(e){}
+    };
+  }
+
+  function watchAnnouncements(){
+    onSnapshot(collection(db, "announcements"), function(snap){
+      var list = [];
+      snap.forEach(function(d){ var x = d.data(); x.id = d.id; list.push(x); });
+      list.sort(function(a,b){ return tsMs(b.createdAt) - tsMs(a.createdAt); });
+      state.annList = list;
+      var latest = list[0];
+      state.latestAnn = (latest && Date.now() - (tsMs(latest.createdAt) || Date.now()) < 14*86400000) ? latest : null;
+      renderTopBanners();
+      if (state.isAdmin && $("annListBox")) renderAnnList();
+    }, function(){});
+  }
+
+  // ================= QUẢN TRỊ: THÔNG BÁO CHUNG, AI CHƯA BẬT THÔNG BÁO, HỌ TÊN CHUẨN, SAO LƯU =================
+  var ANN_TEMPLATE = "Anh em mở app Báo cáo ngày, bấm nút 🔔 \"Bật ngay\" ở đầu trang để nhận thông báo: nhắc nộp báo cáo (19h, 19h30, 19h45), trao đổi, duyệt/trả lại báo cáo.\niPhone: phải thêm app ra Màn hình chính (Safari → Chia sẻ → Thêm vào MH chính) rồi mở từ biểu tượng mới bật được.\nCảm ơn anh em!";
+  function renderAdminExtras(){
+    var box = $("adminExtras");
+    if (!box || !state.isAdmin) return;
+    box.innerHTML =
+      '<div class="card">' +
+        '<h2>📢 Gửi thông báo chung</h2>' +
+        '<p class="muted">Hiện ở đầu app của tất cả anh em (đến khi bấm "Đã đọc") và gửi thông báo đẩy tới máy đã bật thông báo.</p>' +
+        '<label>Tiêu đề</label><input type="text" id="annTitle" value="Thông báo từ GDKD">' +
+        '<label>Nội dung</label><textarea id="annBody" placeholder="Nội dung thông báo..."></textarea>' +
+        '<div class="row" style="margin-top:8px"><button class="btn secondary small" id="annTpl" type="button">Mẫu: yêu cầu bật thông báo</button>' +
+        '<button class="btn small" id="annSend" type="button">📢 Gửi cho tất cả</button></div>' +
+        '<div id="annListBox" style="margin-top:10px"></div>' +
+      '</div>' +
+      '<div class="card"><h2>🔔 Ai chưa bật thông báo</h2><div id="pushStatusBox"><div class="empty">Đang tải...</div></div></div>' +
+      '<div class="card"><h2>🪪 Họ tên chuẩn</h2><p class="muted">Tên hiển thị trong app, Dashboard, Tuân thủ và thông báo. Để trống = dùng tên tài khoản Google.</p><div id="fullNameBox"></div>' +
+        '<button class="btn small" id="fnSaveAll" type="button" style="width:100%;margin-top:8px">💾 Lưu họ tên</button></div>' +
+      '<div class="card"><h2>💾 Sao lưu dữ liệu</h2>' +
+        '<p class="muted">Tải toàn bộ dữ liệu về máy: 1 file Excel (mỗi bảng 1 trang, mở xem được ngay) + 1 file JSON (dùng để khôi phục). Nên lưu vào thư mục <b>SaoLuu_BaoCaoNgay</b> trên máy và 1 bản trên Google Drive, mỗi tuần 1 lần.</p>' +
+        '<div id="backupInfo" class="muted"></div>' +
+        '<button class="btn" id="backupBtn" type="button" style="width:100%;margin-top:8px">⬇️ Tải bản sao lưu toàn bộ</button></div>';
+    $("annTpl").onclick = function(){ $("annTitle").value = "Yêu cầu bật thông báo"; $("annBody").value = ANN_TEMPLATE; };
+    $("annSend").onclick = function(){
+      var b = $("annSend"), title = $("annTitle").value.trim(), body = $("annBody").value.trim();
+      if (!body){ showToast("Nhập nội dung thông báo.", true); return; }
+      armConfirm(b, async function(){
+        try {
+          await addDoc(collection(db, "announcements"), { title: title || "Thông báo", body: body, createdAt: serverTimestamp(), createdBy: state.myId, createdByName: empName(state.myId) === "Nhân viên" ? state.myName : empName(state.myId) });
+          $("annBody").value = "";
+          showToast("📢 Đã gửi thông báo chung");
+        } catch(e){ showToast("Gửi thất bại: " + (e.message||""), true); }
+      }, "Bấm lần nữa để gửi cho tất cả");
+    };
+    renderAnnList();
+    renderPushStatus();
+    renderFullNames();
+    var last = null; try { last = localStorage.getItem("lastBackupAt"); } catch(e){}
+    $("backupInfo").textContent = last ? ("Lần sao lưu gần nhất trên máy này: " + fmtMs(Number(last))) : "Chưa sao lưu lần nào trên máy này.";
+    $("backupBtn").onclick = doBackup;
+  }
+
+  function renderAnnList(){
+    var box = $("annListBox");
+    if (!box) return;
+    var list = (state.annList || []).slice(0, 5);
+    if (!list.length){ box.innerHTML = ""; return; }
+    var members = Object.keys(state.team);
+    box.innerHTML = '<h3>Đã gửi gần đây</h3>' + list.map(function(a){
+      var read = members.filter(function(u){ var r = (state.allUsers[u] || {}).annReads; return r && r[a.id]; });
+      var unread = members.filter(function(u){ return read.indexOf(u) === -1; });
+      return '<details class="sales-block"><summary><span>'+esc(a.title||"")+' <span class="muted">'+esc(fmtMs(tsMs(a.createdAt)))+'</span></span><span>'+read.length+'/'+members.length+' đã đọc</span></summary>' +
+        '<div class="body"><div class="ann-body" style="white-space:pre-wrap;font-size:13px">'+esc(a.body||"")+'</div>' +
+        (unread.length ? '<div class="ds-line">Chưa đọc: '+unread.map(function(u){ return '<span class="chip warn">'+esc(empName(u))+'</span>'; }).join("")+'</div>' : '') + '</div></details>';
+    }).join("") + '<div class="muted">Số "đã đọc" cập nhật khi tải lại trang.</div>';
+  }
+
+  async function renderPushStatus(){
+    var box = $("pushStatusBox");
+    try {
+      var snap = await getDocs(collection(db, "fcm_tokens"));
+      var has = {};
+      snap.forEach(function(d){ if (d.data().token) has[d.id] = d.data(); });
+      var members = Object.keys(state.team).sort(function(a,b){ return empName(a).localeCompare(empName(b)); });
+      var off = members.filter(function(u){ return !has[u]; }), on = members.filter(function(u){ return has[u]; });
+      box.innerHTML = '<div class="ds-line"><b>Đã bật: '+on.length+'/'+members.length+'</b></div>' +
+        (off.length ? '<div class="ds-line">🔕 Chưa bật: '+off.map(function(u){ return '<span class="chip bad">'+esc(empName(u))+'</span>'; }).join("")+'</div>' : '<div class="ds-line">✅ Tất cả đã bật.</div>') +
+        (on.length ? '<div class="ds-line">🔔 Đã bật: '+on.map(function(u){ return '<span class="chip ok">'+esc(empName(u))+'</span>'; }).join("")+'</div>' : '') +
+        '<div class="muted" style="margin-top:6px">Mẹo: bấm "Mẫu: yêu cầu bật thông báo" ở trên rồi gửi để nhắc anh em.</div>';
+    } catch(e){ box.innerHTML = '<div class="empty">Lỗi tải: '+esc(e.message||"")+'</div>'; }
+  }
+
+  function renderFullNames(){
+    var box = $("fullNameBox");
+    var uids = Object.keys(state.allUsers).sort(function(a,b){
+      var ta = state.team[a] ? (state.team[a].subName||"") : "zzz", tb = state.team[b] ? (state.team[b].subName||"") : "zzz";
+      return ta === tb ? (state.allUsers[a].name||"").localeCompare(state.allUsers[b].name||"") : ta.localeCompare(tb);
+    });
+    box.innerHTML = uids.map(function(u){
+      var x = state.allUsers[u], t = state.team[u];
+      return '<div class="search-hit" style="flex-wrap:wrap"><span style="flex:1 1 140px"><b>'+esc(x.name||"")+'</b><br><span class="muted">'+esc(t ? t.subName||"" : "Chưa gán Sub")+' · '+esc(x.email||"")+'</span></span>' +
+        '<input type="text" class="fnInput" data-uid="'+esc(u)+'" value="'+esc(x.fullName||"")+'" placeholder="Họ và tên chuẩn" style="flex:1 1 160px"></div>';
+    }).join("") || '<div class="empty">Chưa có người dùng.</div>';
+    $("fnSaveAll").onclick = async function(){
+      var b = $("fnSaveAll"); b.disabled = true;
+      var n = 0;
+      try {
+        var inputs = box.querySelectorAll(".fnInput");
+        for (var i = 0; i < inputs.length; i++){
+          var u = inputs[i].dataset.uid, v = inputs[i].value.trim().replace(/\s+/g, " ");
+          if ((state.allUsers[u].fullName || "") === v) continue;
+          await updateDoc(doc(db, "users", u), { fullName: v });
+          state.allUsers[u].fullName = v; n++;
+        }
+        showToast(n ? "Đã lưu " + n + " họ tên" : "Không có thay đổi");
+      } catch(e){ showToast("Lưu thất bại: " + (e.message||""), true); }
+      b.disabled = false;
+    };
+  }
+
+  function plainVal(v){
+    if (v == null) return v;
+    if (typeof v.toDate === "function") return v.toDate().toISOString();
+    if (v instanceof Date) return v.toISOString();
+    if (Array.isArray(v)) return v.map(plainVal);
+    if (typeof v === "object"){ var o = {}; Object.keys(v).forEach(function(k){ o[k] = plainVal(v[k]); }); return o; }
+    return v;
+  }
+  var BACKUP_COLS = ["reports","daySubs","weekPlans","comments","users","team","subs","categories","slTypes","dtTypes","cgTypes","moMoiTypes","exemptions","announcements","admins"];
+  async function doBackup(){
+    var b = $("backupBtn"); b.disabled = true; b.textContent = "Đang tải dữ liệu...";
+    try {
+      var data = { app: "bao-cao-ngay-greenfeed", exportedAt: new Date().toISOString(), exportedBy: state.myEmail, collections: {} };
+      for (var i = 0; i < BACKUP_COLS.length; i++){
+        var c = BACKUP_COLS[i], arr = [];
+        try { var sn = await getDocs(collection(db, c)); sn.forEach(function(d){ var o = plainVal(d.data()); o._id = d.id; arr.push(o); }); } catch(e){ arr = [{ _error: e.message || "không đọc được" }]; }
+        data.collections[c] = arr;
+      }
+      var stamp = todayStr() + "_" + pad2(new Date().getHours()) + pad2(new Date().getMinutes());
+      var blob = new Blob([JSON.stringify(data, null, 1)], { type: "application/json" });
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "SaoLuu_BaoCaoNgay_" + stamp + ".json";
+      document.body.appendChild(a); a.click(); a.remove();
+      if (typeof XLSX !== "undefined"){
+        var wb = XLSX.utils.book_new();
+        BACKUP_COLS.forEach(function(c){
+          var rows = data.collections[c].map(function(o){ var r = {}; Object.keys(o).forEach(function(k){ var v = o[k]; r[k] = (v && typeof v === "object") ? JSON.stringify(v) : v; }); return r; });
+          if (!rows.length) rows = [{ _trong: "" }];
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), c.slice(0, 31));
+        });
+        XLSX.writeFile(wb, "SaoLuu_BaoCaoNgay_" + stamp + ".xlsx");
+      }
+      try { localStorage.setItem("lastBackupAt", String(Date.now())); } catch(e){}
+      $("backupInfo").textContent = "Lần sao lưu gần nhất trên máy này: " + fmtMs(Date.now());
+      showToast("💾 Đã tải bản sao lưu (" + data.collections.reports.length + " đầu việc)");
+    } catch(e){ showToast("Sao lưu lỗi: " + (e.message||""), true); }
+    b.disabled = false; b.textContent = "⬇️ Tải bản sao lưu toàn bộ";
+  }
+
+  // ================= TAB TUÂN THỦ: ĐÚNG GIỜ / TRỄ / CHƯA GỬI, PHẠT, ĐÁNH GIÁ, SUB ĐỌC BÁO CÁO =================
+  function monthEnd(m){ var d = new Date(Number(m.slice(0,4)), Number(m.slice(5,7)), 0); return ymd(d); }
+  function renderComplyView(){
+    if (!state.cpMonth){ var cm = todayStr().slice(0,7); state.cpMonth = cm < COMPLY_START.slice(0,7) ? COMPLY_START.slice(0,7) : cm; }
+    var scope = state.isAdmin ? "Toàn vùng" : amLead() ? "Sub của tôi" : "Của tôi";
+    $("view-comply").innerHTML =
+      '<div class="card"><h2>⚖️ Tuân thủ báo cáo – ' + esc(scope) + '</h2>' +
+        '<div class="row"><div><label>Tháng</label><input type="month" id="cpMonth" value="'+esc(state.cpMonth)+'"></div>' +
+        '<div style="flex:0 0 auto;align-self:flex-end"><button class="btn small" id="cpExport" type="button">⬇️ Excel</button></div></div>' +
+        '<div class="muted" style="margin-top:8px">BC ngày: hạn <b>20:00</b> (T7 → 20:00 CN) · gửi bù trước 12:00 trưa hôm sau = <b>Trễ</b>, sau đó = <b>Chưa gửi</b> · phạt 200.000đ/lần.<br>KH tuần: hạn <b>20:00 CN</b> · phạt 500.000đ/lần · Ngưỡng tháng: ≥4 lần BC ngày hoặc ≥1 lần KH tuần. Tính từ '+fmtDateVN(COMPLY_START)+'.</div>' +
+      '</div><div id="cpResult"><div class="card"><div class="empty">Đang tải...</div></div></div>';
+    $("cpMonth").onchange = function(e){ state.cpMonth = e.target.value; refreshComply(); };
+    $("cpExport").onclick = exportComplyExcel;
+    refreshComply();
+  }
+
+  function cpMembers(){
+    if (state.isAdmin) return Object.keys(state.team);
+    if (amLead()) return Object.keys(state.team).filter(function(u){ return state.team[u].subId === mySubId(); });
+    return [state.myId];
+  }
+  async function cpLoad(col, from, to, field){
+    var q;
+    if (state.isAdmin) q = query(collection(db, col), where(field, ">=", from), where(field, "<=", to));
+    else if (amLead() && mySubId()) q = query(collection(db, col), where("subId", "==", mySubId()));
+    else q = query(collection(db, col), where("userId", "==", state.myId));
+    var out = {};
+    var sn = await getDocs(q);
+    sn.forEach(function(d){ var x = d.data(); if (x[field] >= from && x[field] <= to) out[d.id] = x; });
+    return out;
+  }
+
+  async function refreshComply(){
+    var box = $("cpResult");
+    var m = state.cpMonth, from = m + "-01", to = monthEnd(m), today = todayStr();
+    var start = from < COMPLY_START ? COMPLY_START : from;
+    box.innerHTML = '<div class="card"><div class="empty">Đang tải...</div></div>';
+    await ensureAllUsers();
+    var days = [];
+    for (var d = start; d <= to && d <= today; d = addDaysIso(d, 1)) if (dowOf(d) !== 0) days.push(d);
+    var weeks = [];   // KH tuần ws có hạn CN (ws-1) nằm trong tháng
+    for (var d2 = from; d2 <= to; d2 = addDaysIso(d2, 1)) if (dowOf(d2) === 0 && d2 >= COMPLY_START && d2 <= today) weeks.push(addDaysIso(d2, 1));
+    var subs = {}, plans = {}, exs = {};
+    try {
+      subs = await cpLoad("daySubs", from, to, "date");
+      if (weeks.length) plans = await cpLoad("weekPlans", weeks[0], weeks[weeks.length-1], "weekStart");
+      var es = await getDocs(collection(db, "exemptions"));
+      es.forEach(function(x){ exs[x.id] = x.data(); });
+    } catch(e){ box.innerHTML = '<div class="card"><div class="empty">Lỗi tải: '+esc(e.message||"")+'</div></div>'; return; }
+    var members = cpMembers().sort(function(a,b){
+      var sa = (state.team[a]||{}).subName||"", sb = (state.team[b]||{}).subName||"";
+      return sa === sb ? empName(a).localeCompare(empName(b)) : sa.localeCompare(sb);
+    });
+    var rows = members.map(function(u){
+      var r = { uid: u, name: empName(u), sub: (state.team[u]||{}).subName || "", days: [], weeks: [], ok:0, late:0, miss:0, off:0, wLate:0, wMiss:0, wOk:0 };
+      days.forEach(function(D){
+        var ex = exs[u + "_" + D];
+        var st = ex ? ex.type : subState(subs[daySubId(u, D)], dayDeadlineMs(D), dayCutoffMs(D));
+        var sub = subs[daySubId(u, D)];
+        r.days.push({ date: D, st: st, at: sub ? tsMs(sub.firstSubmittedAt || sub.submittedAt) : 0, note: ex ? ex.note : "" });
+        if (st === "DungGio") r.ok++; else if (st === "Tre") r.late++; else if (st === "ChuaGui") r.miss++; else if (st === "NghiPhep" || st === "LoaiTru") r.off++;
+      });
+      weeks.forEach(function(ws){
+        var ex = exs[u + "_W" + ws], p = plans[planDocId(u, ws)];
+        var st;
+        if (ex) st = ex.type;
+        else {
+          var t = p ? tsMs(p.firstSubmittedAt) : 0;
+          st = t ? (t <= weekDeadlineMs(ws) ? "DungGio" : t <= weekCutoffMs(ws) ? "Tre" : "ChuaGui") : (Date.now() > weekCutoffMs(ws) ? "ChuaGui" : "Cho");
+        }
+        r.weeks.push({ ws: ws, st: st, at: p ? tsMs(p.firstSubmittedAt) : 0, note: ex ? ex.note : "" });
+        if (st === "DungGio") r.wOk++; else if (st === "Tre") r.wLate++; else if (st === "ChuaGui") r.wMiss++;
+      });
+      r.fine = (r.late + r.miss) * FINE_DAY + (r.wLate + r.wMiss) * FINE_WEEK;
+      r.over = (r.late + r.miss) >= 4 || (r.wLate + r.wMiss) >= 1;
+      return r;
+    });
+    state.cpRows = rows;
+    var tot = rows.reduce(function(a, r){ a.fine += r.fine; a.over += r.over ? 1 : 0; a.miss += r.miss + r.wMiss; a.late += r.late + r.wLate; return a; }, { fine:0, over:0, miss:0, late:0 });
+    var html = '<div class="card"><h2>Tổng hợp tháng '+esc(m.slice(5,7)+"/"+m.slice(0,4))+'</h2>' +
+      '<div class="stat-grid"><div class="stat"><div class="num">'+tot.late+'</div><div class="label">Lần trễ</div></div>' +
+      '<div class="stat"><div class="num" style="color:var(--danger)">'+tot.miss+'</div><div class="label">Lần chưa gửi</div></div>' +
+      '<div class="stat"><div class="num">'+tot.over+'</div><div class="label">Người chạm ngưỡng</div></div></div>' +
+      '<div class="metric-grid" style="grid-template-columns:1fr"><div class="metric"><div class="num">'+fmtNum(tot.fine)+'đ</div><div class="label">Tổng tiền phạt</div></div></div>';
+    if (!days.length && !weeks.length) html += '<div class="empty" style="margin-top:10px">Chưa có ngày nào đến hạn trong tháng này (tính từ '+fmtDateVN(COMPLY_START)+').</div>';
+    html += '<div style="margin-top:12px"><table class="cp-table"><thead><tr><th style="width:34%">Nhân viên</th><th>Đúng</th><th>Trễ</th><th>Chưa gửi</th><th>Tuần trễ/chưa</th><th style="width:22%">Phạt</th></tr></thead><tbody>' +
+      rows.map(function(r){
+        return '<tr class="'+(r.over?"over":"")+'"><td class="nm">'+esc(r.name)+(r.over?' ⚠️':'')+'<br><span class="muted">'+esc(r.sub)+'</span></td><td>'+r.ok+'</td><td>'+r.late+'</td><td>'+r.miss+'</td><td>'+(r.wLate+r.wMiss)+'</td><td>'+(r.fine?fmtNum(r.fine/1000)+'k':'-')+'</td></tr>';
+      }).join("") + '</tbody></table><div class="muted" style="margin-top:4px">⚠️ = chạm ngưỡng tháng (chỉ hiển thị số liệu, anh quyết định xử lý).</div></div></div>';
+
+    var never = rows.filter(function(r){ return r.miss + r.wMiss > 0; }).sort(function(a,b){ return (b.miss+b.wMiss) - (a.miss+a.wMiss); });
+    if (never.length){
+      html += '<div class="card"><h2>⛔ Hoàn toàn không báo cáo</h2><p class="muted">Vừa tính phạt như trễ, vừa cần xem xét OKR & 9 hành vi GREENFEED WAY (Trung thực, Tự tin, Nhiệt huyết, Thực thi, Kiên định, Cầu tiến, Đồng lòng, Đồng đội, Can đảm). Hệ thống không tự kết luận.</p>' +
+        never.map(function(r){ return '<div class="search-hit"><span><b>'+esc(r.name)+'</b> <span class="muted">'+esc(r.sub)+'</span></span><span>'+(r.miss?'<span class="chip bad">'+r.miss+' ngày</span>':'')+(r.wMiss?'<span class="chip bad">'+r.wMiss+' tuần</span>':'')+'</span></div>'; }).join("") + '</div>';
+    }
+
+    html += '<div class="card"><h2>Chi tiết từng người</h2>' +
+      '<div class="cp-legend"><span class="cp-day DungGio">Đúng</span><span class="cp-day Tre">Trễ</span><span class="cp-day ChuaGui">Chưa</span><span class="cp-day NghiPhep">Nghỉ/LT</span><span class="cp-day Cho">Chờ</span></div>' +
+      (state.isAdmin ? '<div class="muted" style="margin-top:4px">Bấm vào 1 ô để đánh dấu Nghỉ phép / Loại trừ.</div>' : '') +
+      rows.map(function(r){
+        return '<details class="sales-block"><summary><span>'+esc(r.name)+'</span><span class="muted">'+r.ok+' đúng · '+(r.late+r.miss)+' vi phạm</span></summary><div class="body">' +
+          '<div class="muted">Báo cáo ngày</div><div class="cp-days">' + r.days.map(function(x){
+            return '<span class="cp-day '+x.st+(state.isAdmin?' admin':'')+'" data-uid="'+esc(r.uid)+'" data-key="'+x.date+'" title="'+esc(CP_LABEL[x.st]+(x.at?" · "+fmtMs(x.at):"")+(x.note?" · "+x.note:""))+'">'+dowLabel(x.date)+'<br>'+x.date.slice(8,10)+'/'+x.date.slice(5,7)+'</span>';
+          }).join("") + '</div>' +
+          (r.weeks.length ? '<div class="muted" style="margin-top:6px">Kế hoạch tuần</div><div class="cp-days">' + r.weeks.map(function(x){
+            return '<span class="cp-day '+x.st+(state.isAdmin?' admin':'')+'" style="width:auto;padding:3px 6px" data-uid="'+esc(r.uid)+'" data-key="W'+x.ws+'" title="'+esc(CP_LABEL[x.st]+(x.at?" · "+fmtMs(x.at):"")+(x.note?" · "+x.note:""))+'">Tuần '+x.ws.slice(8,10)+'/'+x.ws.slice(5,7)+'</span>';
+          }).join("") + '</div>' : '') +
+          '</div></details>';
+      }).join("") + '</div>';
+
+    if (state.isAdmin || amLead()) html += leadAttentionHtml(subs, members);
+    box.innerHTML = html;
+    if (state.isAdmin) box.querySelectorAll(".cp-day.admin").forEach(function(el){ el.onclick = function(){ openExemptModal(el.dataset.uid, el.dataset.key, exs[el.dataset.uid + "_" + el.dataset.key]); }; });
+  }
+
+  // Thống kê Quản lý Sub có đọc / duyệt báo cáo của nhân viên không
+  function leadAttentionHtml(subs, members){
+    var leads = members.filter(function(u){ return (state.team[u]||{}).isLead; });
+    if (!leads.length) return "";
+    var rows = leads.map(function(L){
+      var sid = state.team[L].subId;
+      var list = Object.keys(subs).map(function(k){ return subs[k]; }).filter(function(x){ return x.subId === sid && x.userId !== L; });
+      var viewed = list.filter(function(x){ return x.leadViewedAt; });
+      var hrs = viewed.map(function(x){ return (tsMs(x.leadViewedAt) - tsMs(x.submittedAt || x.firstSubmittedAt)) / 3600000; }).filter(function(h){ return h >= 0; });
+      var avg = hrs.length ? hrs.reduce(function(a,b){ return a+b; }, 0) / hrs.length : null;
+      var own = Object.keys(subs).map(function(k){ return subs[k]; }).filter(function(x){ return x.userId === L; });
+      return { L: L, sub: state.team[L].subName, n: list.length, v: viewed.length, ap: list.filter(function(x){ return x.status === "approved"; }).length,
+        rt: list.filter(function(x){ return x.status === "returned" || x.returnReason; }).length, avg: avg, own: own.length, ownSeen: own.filter(function(x){ return x.adminViewedAt; }).length };
+    });
+    return '<div class="card"><h2>👁 Quản lý Sub đọc báo cáo</h2><p class="muted">Tính trên báo cáo đã gửi trong tháng của nhân viên trong Sub (không tính báo cáo của chính Quản lý).</p>' +
+      '<table class="cp-table"><thead><tr><th style="width:30%">Quản lý</th><th>BC gửi</th><th>Đã xem</th><th>Duyệt</th><th>Trả lại</th><th>TB xem sau</th></tr></thead><tbody>' +
+      rows.map(function(r){
+        var pct = r.n ? Math.round(r.v * 100 / r.n) : 0;
+        return '<tr class="'+(r.n && pct < 80 ? "over" : "")+'"><td class="nm">'+esc(empName(r.L))+'<br><span class="muted">'+esc(r.sub||"")+'</span></td><td>'+r.n+'</td><td><b>'+pct+'%</b><br><span class="muted">'+r.v+'</span></td><td>'+r.ap+'</td><td>'+r.rt+'</td><td>'+(r.avg == null ? "-" : r.avg < 1 ? Math.round(r.avg*60)+"p" : r.avg.toFixed(1)+"h")+'</td></tr>';
+      }).join("") + '</tbody></table><div class="muted" style="margin-top:4px">Tô đỏ = xem dưới 80% báo cáo của Sub.' + (state.isAdmin ? ' GDKD đã xem báo cáo của Quản lý: ' + rows.map(function(r){ return esc(empName(r.L)) + " " + r.ownSeen + "/" + r.own; }).join(" · ") : '') + '</div></div>';
+  }
+
+  function openExemptModal(uid, key, ex){
+    ensureEditModal();
+    var isWeek = key.charAt(0) === "W", d = isWeek ? key.slice(1) : key;
+    $("emTitle").textContent = empName(uid) + " · " + (isWeek ? "KH tuần " + fmtDateVN(d) : dowLabel(d) + " " + fmtDateVN(d));
+    $("emBody").innerHTML = '<label>Đánh dấu</label><select id="exType"><option value="">(Không – tính bình thường)</option>' +
+      '<option value="NghiPhep"'+(ex && ex.type==="NghiPhep"?" selected":"")+'>Nghỉ phép</option><option value="LoaiTru"'+(ex && ex.type==="LoaiTru"?" selected":"")+'>Loại trừ (quyết định GDKD)</option></select>' +
+      '<label>Ghi chú / lý do</label><input type="text" id="exNote" value="'+esc(ex ? ex.note||"" : "")+'" placeholder="VD: nghỉ phép có báo trước">' +
+      '<button class="btn" id="exSave" style="width:100%;margin-top:12px">Lưu</button>';
+    $("editOverlay").classList.add("open");
+    $("exSave").onclick = async function(){
+      var t = $("exType").value, ref = doc(db, "exemptions", uid + "_" + key);
+      try {
+        if (!t) await deleteDoc(ref);
+        else await setDoc(ref, { userId: uid, subId: (state.team[uid]||{}).subId || null, date: d, kind: isWeek ? "week" : "day", type: t, note: $("exNote").value.trim(), setBy: state.myId, setAt: new Date().toISOString() });
+        $("editOverlay").classList.remove("open");
+        showToast("Đã lưu");
+        refreshComply();
+      } catch(e){ showToast("Lỗi: " + (e.message||""), true); }
+    };
+  }
+
+  function exportComplyExcel(){
+    var rows = state.cpRows || [];
+    if (!rows.length || typeof XLSX === "undefined"){ showToast("Chưa có dữ liệu để xuất.", true); return; }
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.map(function(r){
+      return { "Nhân viên": r.name, "Sub": r.sub, "Đúng giờ": r.ok, "Trễ": r.late, "Chưa gửi": r.miss, "Nghỉ/Loại trừ": r.off,
+        "KH tuần trễ": r.wLate, "KH tuần chưa nộp": r.wMiss, "Phạt (đ)": r.fine, "Chạm ngưỡng": r.over ? "Có" : "" };
+    })), "TongHop");
+    var det = [];
+    rows.forEach(function(r){ r.days.forEach(function(x){ det.push({ "Ngày": fmtDateVN(x.date), "Thứ": dowLabel(x.date), "Nhân viên": r.name, "Sub": r.sub, "Trạng thái": CP_LABEL[x.st], "Giờ gửi": x.at ? fmtMs(x.at) : "", "Phạt (đ)": (x.st==="Tre"||x.st==="ChuaGui") ? FINE_DAY : 0, "Ghi chú": x.note || "" }); }); });
+    if (det.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(det), "BC_Ngay");
+    var wk = [];
+    rows.forEach(function(r){ r.weeks.forEach(function(x){ wk.push({ "Tuần bắt đầu": fmtDateVN(x.ws), "Nhân viên": r.name, "Sub": r.sub, "Trạng thái": CP_LABEL[x.st], "Giờ nộp": x.at ? fmtMs(x.at) : "", "Phạt (đ)": (x.st==="Tre"||x.st==="ChuaGui") ? FINE_WEEK : 0, "Ghi chú": x.note || "" }); }); });
+    if (wk.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wk), "BC_Tuan");
+    XLSX.writeFile(wb, "TuanThu_" + state.cpMonth + ".xlsx");
+  }
+
+  // ================= KẾ HOẠCH TUẦN: LƯU TẠM → GỬI → KHOÁ → DUYỆT / TRẢ LẠI =================
+  function ownerPlanLocked(p, uid){
+    return uid === state.myId && !state.isAdmin && lockActive() && !!p && (p.status === "sent" || p.status === "approved");
+  }
+  function planStatusHtml(p, uid, itemsCount){
+    var ws = state.planWeek, deadline = weekDeadlineMs(ws), cutoff = weekCutoffMs(ws);
+    var st = p.status || "draft", mine = uid === state.myId;
+    var t = tsMs(p.firstSubmittedAt);
+    var cls = "ds-card" + (st === "returned" ? " returned" : (!t && Date.now() > deadline ? " late" : ""));
+    var h = '<div class="'+cls+'" style="margin-top:0"><div class="ds-title">';
+    if (st === "returned") h += '↩️ Kế hoạch tuần bị trả lại';
+    else if (st === "approved") h += '✅ Kế hoạch tuần đã được duyệt';
+    else if (st === "sent") h += '📤 Đã gửi kế hoạch tuần';
+    else h += '📝 Kế hoạch tuần: đang lưu tạm (chưa gửi)';
+    h += '</div><div class="ds-line">Hạn gửi: <b>20:00 CN '+fmtDateVN(addDaysIso(ws,-1)).slice(0,5)+'</b>' +
+      (t ? ' · gửi lúc <b>'+esc(fmtMs(t))+'</b> <span class="chip '+(t <= deadline ? "ok" : "bad")+'">'+(t <= deadline ? "Đúng giờ" : t <= cutoff ? "Trễ" : "Quá hạn")+'</span>' : (Date.now() > deadline ? ' <span class="chip bad">Đã quá hạn</span>' : '')) + '</div>';
+    if (st === "returned") h += '<div class="ds-line"><b>'+esc(empName(p.returnedBy))+'</b>: '+esc(p.returnReason||"")+'</div>';
+    h += '<div class="ds-line">'+viewInfoHtml(p.status ? p : null)+'</div>';
+    if (mine && (st === "draft" || st === "returned")){
+      h += '<button class="btn" id="plSendBtn" style="width:100%;margin-top:8px">'+(st === "returned" ? "📤 Gửi lại kế hoạch tuần" : "📤 Gửi kế hoạch tuần")+' ('+itemsCount+' việc)</button>' +
+        '<div class="muted" style="margin-top:4px">'+(lockActive() ? "Sau khi gửi sẽ không thêm/xoá được (trừ khi quản lý trả lại)." : "Từ 01/10: sau khi gửi sẽ không thêm/xoá được.")+'</div>';
+    }
+    if (!mine && canReview(uid) && (st === "sent" || st === "approved")){
+      h += '<div class="rv-bar">' + (st !== "approved" ? '<button class="btn small" id="plApprove">✅ Duyệt</button>' : '') +
+        '<button class="btn small secondary" id="plReturn">↩️ Trả lại</button></div>' +
+        '<div id="plReturnBox" style="display:none"><input type="text" id="plReason" placeholder="Lý do trả lại (bắt buộc)..."><button class="btn small danger" id="plReturnGo" style="width:100%;margin-top:6px">Xác nhận trả lại</button></div>';
+    }
+    return h + '</div>';
+  }
+  function wirePlanStatus(p, uid, itemsCount){
+    var ref = doc(db, "weekPlans", planDocId(uid, state.planWeek));
+    if ($("plSendBtn")) $("plSendBtn").onclick = async function(){
+      if (!itemsCount){ showToast("Chưa có việc nào trong kế hoạch tuần.", true); return; }
+      var b = $("plSendBtn"); b.disabled = true;
+      try {
+        var upd = { status: "sent", submittedAt: serverTimestamp() };
+        if (!p.firstSubmittedAt) upd.firstSubmittedAt = serverTimestamp();
+        await updateDoc(ref, upd);
+        showToast("📤 Đã gửi kế hoạch tuần");
+      } catch(e){ showToast("Gửi thất bại: " + (e.message||""), true); }
+      refreshPlan();
+    };
+    var review = async function(status, reason){
+      try {
+        var upd = { status: status };
+        if (status === "approved"){ upd.approvedAt = serverTimestamp(); upd.approvedBy = state.myId; }
+        else { upd.returnedAt = serverTimestamp(); upd.returnedBy = state.myId; upd.returnReason = reason; }
+        await updateDoc(ref, upd);
+        showToast(status === "approved" ? "✅ Đã duyệt kế hoạch tuần" : "↩️ Đã trả lại kế hoạch tuần");
+      } catch(e){ showToast("Lỗi: " + (e.message||""), true); }
+      refreshPlan();
+    };
+    if ($("plApprove")) $("plApprove").onclick = function(){ review("approved", ""); };
+    if ($("plReturn")) $("plReturn").onclick = function(){ $("plReturnBox").style.display = ""; $("plReason").focus(); };
+    if ($("plReturnGo")) $("plReturnGo").onclick = function(){
+      var why = $("plReason").value.trim();
+      if (!why){ showToast("Nhập lý do trả lại.", true); return; }
+      review("returned", why);
+    };
+    // Ghi nhận quản lý đã xem
+    if (uid !== state.myId && p.status && p.status !== "draft"){
+      var t = state.team[uid] || {}, upd2 = {};
+      if (state.isAdmin && !p.adminViewedAt){ upd2.adminViewedAt = serverTimestamp(); upd2.adminViewedBy = state.myId; }
+      if (amLead() && t.subId === mySubId() && !p.leadViewedAt){ upd2.leadViewedAt = serverTimestamp(); upd2.leadViewedBy = state.myId; }
+      if (Object.keys(upd2).length) updateDoc(ref, upd2).catch(function(){});
+    }
+  }
+
+  // ================= (11) BẤM Ô SỐ LIỆU ĐỂ XEM NHANH AI LÀM VIỆC ĐÓ =================
+  var DRILL = {
+    total: { t: "Tổng đầu việc", f: function(r){ return true; } },
+    done: { t: "Hoàn thành", f: function(r){ return r.status === "done"; } },
+    progress: { t: "Đang tiến hành", f: function(r){ return ["done","notdone","pending"].indexOf(r.status) === -1; } },
+    notdone: { t: "Chưa hoàn thành", f: function(r){ return r.status === "notdone"; } },
+    pending: { t: "Chưa cập nhật", f: function(r){ return r.status === "pending"; } },
+    sanLuong: { t: "Sản lượng (tấn)", f: function(r){ return Number(r.sanLuong) > 0; }, v: function(r){ return fmtNum(r.sanLuong)+" tấn"+(r.slType?" · "+r.slType:""); } },
+    doanhThu: { t: "Doanh thu (tr)", f: function(r){ return Number(r.doanhThu) > 0; }, v: function(r){ return fmtNum(r.doanhThu)+" tr"+(r.dtType?" · "+r.dtType:""); } },
+    conGiong: { t: "Con giống", f: function(r){ return Number(r.conGiong) > 0; }, v: function(r){ return fmtNum(r.conGiong)+" con"+(r.cgType?" · "+r.cgType:""); } },
+    moMoi: { t: "Mở mới", f: function(r){ return !!r.moMoiType; }, v: function(r){ return (r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+" KH · ":"")+r.moMoiType; } }
+  };
+  document.addEventListener("click", function(e){
+    var el = e.target.closest && e.target.closest("[data-f]");
+    if (!el || !$("dashResult") || !$("dashResult").contains(el)) return;
+    var def = DRILL[el.dataset.f]; if (!def) return;
+    var scope = el.dataset.scope || "all";
+    var list = (state.dashReports || []).filter(function(r){ return r.draft !== true && (scope === "all" || (r.subId || "__none__") === scope) && def.f(r); });
+    list.sort(function(a,b){ return (a.subName||"").localeCompare(b.subName||"") || empName(a.userId).localeCompare(empName(b.userId)) || (a.date||"").localeCompare(b.date||""); });
+    ensureEditModal();
+    $("emTitle").textContent = def.t + " · " + list.length + " đầu việc";
+    var byUser = {};
+    list.forEach(function(r){ (byUser[r.userId] = byUser[r.userId] || []).push(r); });
+    var uids = Object.keys(byUser).sort(function(a,b){ return empName(a).localeCompare(empName(b)); });
+    if (def.v) uids.sort(function(a,b){
+      var k = el.dataset.f === "moMoi" ? "moMoiSoLuong" : el.dataset.f;
+      var sa = byUser[a].reduce(function(x,r){ return x + (Number(r[k])||0); }, 0), sb = byUser[b].reduce(function(x,r){ return x + (Number(r[k])||0); }, 0);
+      return sb - sa;
+    });
+    $("emBody").innerHTML = uids.length ? uids.map(function(u){
+      var items = byUser[u];
+      var k = el.dataset.f === "moMoi" ? "moMoiSoLuong" : el.dataset.f;
+      var sum = def.v ? items.reduce(function(x,r){ return x + (Number(r[k])||0); }, 0) : null;
+      return '<div class="entry"><div class="top"><b>'+esc(empName(u))+' <span class="muted">'+esc((items[0].subName)||"")+'</span></b><span class="badge progress">'+(sum != null ? fmtNum(sum) : items.length+" việc")+'</span></div>' +
+        items.map(function(r){
+          var st = STATUS[r.status] || STATUS.pending;
+          return '<div class="meta" style="border-top:1px dashed var(--border);padding-top:4px">'+(state.dashMode !== "day" ? esc(fmtDateVN(r.date).slice(0,5))+' · ' : '')+'<b>'+esc(r.categoryName||"")+'</b> · '+st.label +
+            (def.v ? ' · <b>'+esc(def.v(r))+'</b>' : '') +
+            (r.description ? '<br>'+esc(r.description) : '') +
+            (r.status === "done" && r.resultDescription ? '<br>✅ '+esc(r.resultDescription) : '') +
+            (r.status === "notdone" && r.reasonNotDone ? '<br>❌ '+esc(r.reasonNotDone) : '') + '</div>';
+        }).join("") +
+        (state.dashMode === "day" ? '<button class="btn secondary small drillGo" data-uid="'+esc(u)+'" style="margin-top:6px">Xem chi tiết '+esc(empName(u))+' →</button>' : '') + '</div>';
+    }).join("") : '<div class="empty">Không có đầu việc nào.</div>';
+    $("editOverlay").classList.add("open");
+    $("emBody").querySelectorAll(".drillGo").forEach(function(b){ b.onclick = function(){
+      $("editOverlay").classList.remove("open");
+      var det = $("dashResult").querySelector('details.sales-block[data-uid="'+CSS.escape(b.dataset.uid)+'"]');
+      if (det){ var sb = det.closest("details.sub-block"); if (sb) sb.open = true; det.open = true; det.scrollIntoView({ behavior: "smooth", block: "start" }); }
+    }; });
+  });
+
   // Firebase Cloud Messaging (FCM) - Push notifications
   let swRegPromise = null;
   const pushBtn = document.getElementById("pushBtn");
@@ -2318,10 +3107,12 @@ const provider = new GoogleAuthProvider();
       }, { merge: true });
     }).then(function(){
       if(pushBtn) pushBtn.style.display = "none";
+      state.pushOk = true; try { renderTopBanners(); } catch(e){}
       if(verbose) pushMsg("✅ Đã bật thông báo cho máy này");
     }).catch(function(err){
       console.log('FCM error:', err);
       if(pushBtn) pushBtn.style.display = "inline-block";
+      state.pushOk = false; try { renderTopBanners(); } catch(e){}
       pushMsg("❌ Lỗi bật thông báo: " + ((err && (err.code || err.message)) || err));
     });
   }
