@@ -2288,6 +2288,31 @@ const provider = new GoogleAuthProvider();
         '<button class="btn secondary small" id="plThisWeek" style="width:100%">Về tuần này</button>' +
         userPicker +
       '</div>' +
+      '<div class="card" id="plSumCard">' +
+        '<h2>1-2. Kết quả tuần trước & Mục tiêu tuần này</h2>' +
+        '<div class="muted">Tuần đầu dùng app: anh/chị tự điền tay. Chỉ tính KH <b>mở mới qua đại lý</b>, <b>đại lý/trại lấy trực tiếp công ty</b>, hoặc <b>đã chuyển đổi 100%</b>. KH đang chuyển đổi (chưa 100%) chỉ ghi số lượng theo dõi, không cộng vào tổng.</div>' +
+        '<b style="display:block;margin-top:8px">Kết quả tuần trước</b>' +
+        '<div class="row"><div><label>Sản lượng cám (tấn)</label><input type="number" id="sumSlPrev" step="0.1"></div>' +
+        '<div><label>Doanh thu SPTY (triệu)</label><input type="number" id="sumDtPrev" step="0.1"></div></div>' +
+        '<div class="row"><div><label>Con giống (con)</label><input type="number" id="sumCgPrev"></div>' +
+        '<div><label>Mở mới/chuyển đổi (KH)</label><input type="number" id="sumMmPrev"></div></div>' +
+        '<label>Loại mở mới/chuyển đổi</label><select id="sumMmTypePrev">' +
+          '<option value="">-- chọn --</option>' +
+          '<option value="daily">Mở hộ chăn nuôi mới qua đại lý</option>' +
+          '<option value="direct">Đại lý/Trại mới lấy trực tiếp công ty</option>' +
+          '<option value="full">Đã chuyển đổi 100%</option>' +
+          '<option value="partial">Đang chuyển đổi (chưa 100%, không cộng số)</option>' +
+        '</select>' +
+        '<b style="display:block;margin-top:12px">Mục tiêu tuần này</b>' +
+        '<div class="row"><div><label>Sản lượng cám (tấn)</label><input type="number" id="sumSlTarget" step="0.1"></div>' +
+        '<div><label>Doanh thu SPTY (triệu)</label><input type="number" id="sumDtTarget" step="0.1"></div></div>' +
+        '<div class="row"><div><label>Con giống (con)</label><input type="number" id="sumCgTarget"></div>' +
+        '<div><label>Mở mới/chuyển đổi (KH)</label><input type="number" id="sumMmTarget"></div></div>' +
+        '<b style="display:block;margin-top:12px">5. Phối hợp cấp trên / Kỹ thuật heo / Kỹ thuật gia cầm</b>' +
+        '<textarea id="sumSupport" rows="2" placeholder="Việc cần Sub, GDKD, hoặc AE kỹ thuật hỗ trợ..."></textarea>' +
+        '<button class="btn" id="sumSaveBtn" style="margin-top:10px;width:100%">Lưu mục 1-2-5</button>' +
+        '<div id="sumSaveMsg" class="muted" style="margin-top:6px"></div>' +
+      '</div>' +
       '<div class="card" id="plAddCard">' +
         '<h2>+ Thêm việc vào kế hoạch</h2>' +
         '<div class="row"><div><label>Ngày</label><select id="plDay"></select></div>' +
@@ -2303,7 +2328,24 @@ const provider = new GoogleAuthProvider();
     $("plThisWeek").onclick = function(){ state.planWeek = mondayOf(todayStr()); refreshPlan(); };
     if ($("plUser")) $("plUser").onchange = function(e){ state.planUser = e.target.value; refreshPlan(); };
     $("plAddBtn").onclick = addPlanItem;
+    $("sumSaveBtn").onclick = savePlanSummary;
     refreshPlan();
+  }
+
+  async function savePlanSummary(){
+    var uid = state.planUser || state.myId, ws = state.planWeek;
+    var v = function(id){ return Number($(id).value) || 0; };
+    var data = {
+      prevWeek: { sl: v("sumSlPrev"), dt: v("sumDtPrev"), cg: v("sumCgPrev"), mm: v("sumMmPrev"), mmType: $("sumMmTypePrev").value },
+      target: { sl: v("sumSlTarget"), dt: v("sumDtTarget"), cg: v("sumCgTarget"), mm: v("sumMmTarget") },
+      support: $("sumSupport").value || "",
+      userId: uid, subId: (state.team[uid]||{}).subId || "", subName: (state.team[uid]||{}).subName || ""
+    };
+    $("sumSaveMsg").textContent = "Đang lưu...";
+    try {
+      await setDoc(doc(db, "weekPlans", planDocId(uid, ws)), data, { merge: true });
+      $("sumSaveMsg").textContent = "✅ Đã lưu";
+    } catch(e){ $("sumSaveMsg").textContent = "❌ Lỗi: " + (e.message || ""); }
   }
 
   async function refreshPlan(){
@@ -2331,6 +2373,16 @@ const provider = new GoogleAuthProvider();
     }
     state.planData = plan;
     if (ownerPlanLocked(plan, uid)){ canEdit = false; $("plAddCard").style.display = "none"; }
+    (function(){
+      var pw = plan.prevWeek || {}, tg = plan.target || {};
+      $("sumSlPrev").value = pw.sl || ""; $("sumDtPrev").value = pw.dt || "";
+      $("sumCgPrev").value = pw.cg || ""; $("sumMmPrev").value = pw.mm || "";
+      $("sumMmTypePrev").value = pw.mmType || "";
+      $("sumSlTarget").value = tg.sl || ""; $("sumDtTarget").value = tg.dt || "";
+      $("sumCgTarget").value = tg.cg || ""; $("sumMmTarget").value = tg.mm || "";
+      $("sumSupport").value = plan.support || "";
+      $("plSumCard").querySelectorAll("input,select,textarea,button").forEach(function(el){ el.disabled = !canEdit; });
+    })();
     renderPlanResult(plan.items || [], reports, days, canEdit);
   }
 
