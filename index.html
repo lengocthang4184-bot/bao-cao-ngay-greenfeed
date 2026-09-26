@@ -619,7 +619,7 @@ const provider = new GoogleAuthProvider();
     myId: null, myName: "", myEmail: "",
     isAdmin: false,
     subs: {}, categories: {}, team: {}, allUsers: {},
-    slTypes: {}, dtTypes: {}, cgTypes: {}, moMoiTypes: {},
+    slTypes: {}, dtTypes: {}, cgTypes: {}, moMoiTypes: {}, qtyUnits: {}, oppStatuses: {},
     myAssignment: null,
     currentTab: "report",
     reportDate: todayStr(),
@@ -812,6 +812,14 @@ const provider = new GoogleAuthProvider();
       var mmSnap = await getDocs(collection(db, "moMoiTypes"));
       state.moMoiTypes = {};
       mmSnap.forEach(function(d){ state.moMoiTypes[d.id] = d.data(); });
+
+      var quSnap = await getDocs(collection(db, "qtyUnits"));
+      state.qtyUnits = {};
+      quSnap.forEach(function(d){ state.qtyUnits[d.id] = d.data(); });
+
+      var osSnap = await getDocs(collection(db, "oppStatuses"));
+      state.oppStatuses = {};
+      osSnap.forEach(function(d){ state.oppStatuses[d.id] = d.data(); });
     } catch(e){}
     if (state.isAdmin){
       try {
@@ -1535,17 +1543,26 @@ const provider = new GoogleAuthProvider();
     return { tinh: tinh, xa: xa };
   }
 
-  var QTY_UNITS = ["Tấn","KH","Heo nái","Heo thịt","Gà thịt","Gà đẻ","Vịt thịt","Vịt đẻ","Cút"];
+  // Đơn vị tính và Trạng thái cơ hội kinh doanh: quản trị viên tự thêm/sửa/xóa ở tab Quản trị.
   function unitOptionsHtml(selected){
-    return '<option value="">-- ĐV --</option>' + QTY_UNITS.map(function(u){
-      return '<option value="'+esc(u)+'"'+(u===selected?" selected":"")+'>'+esc(u)+'</option>';
-    }).join("");
+    return '<option value="">-- ĐV --</option>' + typeOptionsHtmlRaw(state.qtyUnits, selected);
   }
-  function oppStatusLabel_(code){ var f = OPP_STATUS.filter(function(p){ return p[0]===code; })[0]; return f ? f[1] : ""; }
-  var OPP_STATUS = [["potential","Tiềm năng"],["new","Mở mới"],["converting","Chuyển đổi"],["single_item","Một mặt hàng"],["upgrade","Nâng cấp"]];
+  function oppStatusLabel_(name){ return name || ""; }
+  function oppCounts(name){
+    var ids = Object.keys(state.oppStatuses);
+    for (var i=0;i<ids.length;i++){
+      if (state.oppStatuses[ids[i]].name === name) return state.oppStatuses[ids[i]].count !== false;
+    }
+    return true; // không tìm thấy (trạng thái cũ/đã xóa) => tính vào tổng cho an toàn
+  }
   function oppStatusOptionsHtml(selected){
-    return '<option value="">-- Trạng thái --</option>' + OPP_STATUS.map(function(p){
-      return '<option value="'+p[0]+'"'+(p[0]===selected?" selected":"")+'>'+p[1]+'</option>';
+    return '<option value="">-- Trạng thái --</option>' + typeOptionsHtmlRaw(state.oppStatuses, selected);
+  }
+  function typeOptionsHtmlRaw(typesObj, selected){
+    var ids = Object.keys(typesObj);
+    return ids.map(function(id){
+      var name = typesObj[id].name;
+      return '<option value="'+esc(name)+'"'+(name===selected?" selected":"")+'>'+esc(name)+'</option>';
     }).join("");
   }
   function typeOptionsHtml(typesObj, selected){
@@ -1926,6 +1943,21 @@ const provider = new GoogleAuthProvider();
           '<button class="btn small" id="addMoMoiTypeBtn" style="flex:0 0 auto">+ Thêm</button>' +
         '</div>' +
         '<button class="btn secondary small" id="seedMoMoiTypeBtn" style="margin-top:10px">Tạo mặc định</button>' +
+        '<h3>Đơn vị tính (Cơ hội kinh doanh)</h3>' +
+        '<div id="qtyUnitList"></div>' +
+        '<div class="row" style="margin-top:8px">' +
+          '<input type="text" id="newQtyUnitName" placeholder="VD: Tấn, Heo nái, Gà thịt...">' +
+          '<button class="btn small" id="addQtyUnitBtn" style="flex:0 0 auto">+ Thêm</button>' +
+        '</div>' +
+        '<button class="btn secondary small" id="seedQtyUnitBtn" style="margin-top:10px">Tạo mặc định</button>' +
+        '<h3>Trạng thái cơ hội kinh doanh</h3>' +
+        '<div class="muted" style="margin-bottom:6px">"Cộng dồn" = có tính vào tổng Cơ hội kinh doanh của tuần. "Tiềm năng" mặc định KHÔNG cộng dồn (chưa chốt được).</div>' +
+        '<div id="oppStatusList"></div>' +
+        '<div class="row" style="margin-top:8px">' +
+          '<input type="text" id="newOppStatusName" placeholder="VD: Đang đàm phán...">' +
+          '<button class="btn small" id="addOppStatusBtn" style="flex:0 0 auto">+ Thêm (mặc định: cộng dồn)</button>' +
+        '</div>' +
+        '<button class="btn secondary small" id="seedOppStatusBtn" style="margin-top:10px">Tạo mặc định</button>' +
       '</div>';
 
     $("addSubBtn").addEventListener("click", addSub);
@@ -1939,6 +1971,10 @@ const provider = new GoogleAuthProvider();
     $("seedCgTypeBtn").addEventListener("click", function(){ seedGenericTypes("cgTypes","cgTypes","cgTypeList", ["GF24","Hcs Farm","Hcs LK","Gà giống","Vịt giống","Gà thịt","Vịt thịt","Heo thịt"]); });
     $("addMoMoiTypeBtn").addEventListener("click", function(){ addGenericType("moMoiTypes","moMoiTypes","newMoMoiTypeName","moMoiTypeList"); });
     $("seedMoMoiTypeBtn").addEventListener("click", function(){ seedGenericTypes("moMoiTypes","moMoiTypes","moMoiTypeList", ["Đại lý","Trại trực tiếp","Hộ chăn nuôi"]); });
+    $("addQtyUnitBtn").addEventListener("click", function(){ addGenericType("qtyUnits","qtyUnits","newQtyUnitName","qtyUnitList"); });
+    $("seedQtyUnitBtn").addEventListener("click", function(){ seedGenericTypes("qtyUnits","qtyUnits","qtyUnitList", ["Tấn","KH","Heo nái","Heo thịt","Gà thịt","Gà đẻ","Vịt thịt","Vịt đẻ","Cút"]); });
+    $("addOppStatusBtn").addEventListener("click", addOppStatus);
+    $("seedOppStatusBtn").addEventListener("click", seedOppStatuses);
     var searchTimer = null;
     $("empSearch").addEventListener("input", function(e){
       clearTimeout(searchTimer);
@@ -1954,6 +1990,8 @@ const provider = new GoogleAuthProvider();
     renderGenericTypeList("dtTypes","dtTypeList","dtTypes");
     renderGenericTypeList("cgTypes","cgTypeList","cgTypes");
     renderGenericTypeList("moMoiTypes","moMoiTypeList","moMoiTypes");
+    renderGenericTypeList("qtyUnits","qtyUnitList","qtyUnits");
+    renderOppStatusList();
   }
 
   function renderGenericTypeList(stateKey, boxId, collectionName){
@@ -1991,6 +2029,60 @@ const provider = new GoogleAuthProvider();
       state[stateKey][id] = { name: defaults[i] };
     }
     renderGenericTypeList(stateKey, boxId, collectionName);
+  }
+
+  function renderOppStatusList(){
+    var box = $("oppStatusList");
+    var ids = Object.keys(state.oppStatuses);
+    if (!ids.length){ box.innerHTML = '<div class="empty">Chưa có mục nào.</div>'; return; }
+    box.innerHTML = ids.map(function(id){
+      var o = state.oppStatuses[id];
+      var counts = o.count !== false;
+      return '<div class="row" style="align-items:center;margin:4px 0">' +
+        '<span style="flex:1">'+esc(o.name)+' <span class="chip '+(counts?"ok":"warn")+'" style="margin-left:6px">'+(counts?"cộng dồn":"không cộng dồn")+'</span></span>' +
+        '<button class="btn secondary small" data-toggle="'+esc(id)+'" style="flex:0 0 auto">Đổi cộng dồn</button>' +
+        '<button class="btn secondary small" data-del="'+esc(id)+'" style="flex:0 0 auto">Xóa</button>' +
+      '</div>';
+    }).join("");
+    box.querySelectorAll("[data-del]").forEach(function(b){
+      b.addEventListener("click", function(){
+        armConfirm(b, async function(){
+          await deleteDoc(doc(db, "oppStatuses", b.dataset.del));
+          delete state.oppStatuses[b.dataset.del];
+          renderOppStatusList();
+        }, "Chắc?");
+      });
+    });
+    box.querySelectorAll("[data-toggle]").forEach(function(b){
+      b.addEventListener("click", async function(){
+        var id = b.dataset.toggle, o = state.oppStatuses[id];
+        o.count = !(o.count !== false);
+        await setDoc(doc(db, "oppStatuses", id), o);
+        renderOppStatusList();
+      });
+    });
+  }
+
+  async function addOppStatus(){
+    var name = $("newOppStatusName").value.trim();
+    if (!name) return;
+    var id = "oppStatuses_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    var o = { name: name, count: true };
+    await setDoc(doc(db, "oppStatuses", id), o);
+    state.oppStatuses[id] = o;
+    $("newOppStatusName").value = "";
+    renderOppStatusList();
+  }
+
+  async function seedOppStatuses(){
+    var defaults = [["Tiềm năng",false],["Mở mới",true],["Chuyển đổi",true],["Một mặt hàng",true],["Nâng cấp",true]];
+    for (var i=0;i<defaults.length;i++){
+      var id = "oppStatuses_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6) + i;
+      var o = { name: defaults[i][0], count: defaults[i][1] };
+      await setDoc(doc(db, "oppStatuses", id), o);
+      state.oppStatuses[id] = o;
+    }
+    renderOppStatusList();
   }
 
   function subOptionsHtml(selected){
@@ -2458,8 +2550,8 @@ const provider = new GoogleAuthProvider();
     syncCgRowsIn("cgRowsBox","sumCgRows"); syncMmRowsIn("mmRowsBox","sumMmRows");
     syncCgRowsIn("cgTargetRowsBox","sumCgTargetRows"); syncMmRowsIn("mmTargetRowsBox","sumMmTargetRows");
     var sumQty = function(rows){ return rows.reduce(function(x,r){ return x + r.qty; }, 0); };
-    var oppReal = function(rows){ return rows.filter(function(r){ return r.status && r.status !== "potential"; }).reduce(function(x,r){ return x + r.qty; }, 0); };
-    var oppPotential = function(rows){ return rows.filter(function(r){ return r.status === "potential"; }).reduce(function(x,r){ return x + r.qty; }, 0); };
+    var oppReal = function(rows){ return rows.filter(function(r){ return r.status && oppCounts(r.status); }).reduce(function(x,r){ return x + r.qty; }, 0); };
+    var oppPotential = function(rows){ return rows.filter(function(r){ return r.status && !oppCounts(r.status); }).reduce(function(x,r){ return x + r.qty; }, 0); };
     var cgTotal = sumQty(state.sumCgRows), mmTotal = oppReal(state.sumMmRows), mmPotential = oppPotential(state.sumMmRows);
     var cgTargetTotal = sumQty(state.sumCgTargetRows), mmTargetTotal = oppReal(state.sumMmTargetRows);
     var data = {
@@ -2932,7 +3024,7 @@ const provider = new GoogleAuthProvider();
     if (typeof v === "object"){ var o = {}; Object.keys(v).forEach(function(k){ o[k] = plainVal(v[k]); }); return o; }
     return v;
   }
-  var BACKUP_COLS = ["reports","daySubs","weekPlans","comments","users","team","subs","categories","slTypes","dtTypes","cgTypes","moMoiTypes","exemptions","announcements","admins"];
+  var BACKUP_COLS = ["reports","daySubs","weekPlans","comments","users","team","subs","categories","slTypes","dtTypes","cgTypes","moMoiTypes","qtyUnits","oppStatuses","exemptions","announcements","admins"];
   async function doBackup(){
     var b = $("backupBtn"); b.disabled = true; b.textContent = "Đang tải dữ liệu...";
     try {
@@ -3015,7 +3107,7 @@ const provider = new GoogleAuthProvider();
     rows.forEach(function(r){ (bySub[r.sub||"(GDKD quản lý trực tiếp)"] = bySub[r.sub||"(GDKD quản lý trực tiếp)"] || []).push(r); });
     Object.keys(bySub).sort().forEach(function(subName){
       html += '<div class="card"><h3 style="margin:0 0 8px">'+esc(subName)+'</h3>' +
-        '<table class="cp-table"><thead><tr><th>Nhân viên</th><th>Trạng thái</th><th>SL TACN (tấn)<br><span class="muted" style="font-weight:400">'+esc(lblPrev)+' → '+esc(lblThis)+'</span></th><th>Doanh số (tr)<br><span class="muted" style="font-weight:400">'+esc(lblPrev)+' → '+esc(lblThis)+'</span></th><th>Trọng tâm</th><th></th></tr></thead><tbody>' +
+        '<table class="cp-table"><thead><tr><th>Nhân viên</th><th>Trạng thái</th><th>SL TACN (tấn)<br><span style="font-weight:400;color:rgba(255,255,255,.85)">'+esc(lblPrev)+' → '+esc(lblThis)+'</span></th><th>Doanh số (tr)<br><span style="font-weight:400;color:rgba(255,255,255,.85)">'+esc(lblPrev)+' → '+esc(lblThis)+'</span></th><th>Trọng tâm</th><th></th></tr></thead><tbody>' +
         bySub[subName].map(function(r){
           var stChip = !r.sent ? '<span class="chip bad">Chưa gửi</span>' :
             (r.late ? '<span class="chip warn">Trễ '+esc(fmtMs(tsMs(r.p.firstSubmittedAt)).slice(0,5))+'</span>' : '<span class="chip ok">Đúng giờ</span>') +
