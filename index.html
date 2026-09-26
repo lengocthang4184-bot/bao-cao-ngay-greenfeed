@@ -228,7 +228,7 @@
     <button id="logoutBtn">Đăng xuất</button>
   </div>
   <nav class="tabs" id="tabs">
-    <button data-tab="report" class="active">Nộp báo cáo</button>
+    <button data-tab="report" class="active">Kế hoạch ngày</button>
     <button data-tab="plan">Kế hoạch tuần</button>
     <button data-tab="dashboard">Dashboard</button>
     <button data-tab="admin" id="adminTabBtn" style="display:none">Quản trị</button>
@@ -726,7 +726,7 @@ const provider = new GoogleAuthProvider();
     }
   }
 
-  // ================= TAB 1: NỘP BÁO CÁO =================
+  // ================= TAB 1: KẾ HOẠCH NGÀY =================
   function assignBannerClass(){
     return state.myAssignment ? "banner" : "banner warn";
   }
@@ -2002,7 +2002,7 @@ const provider = new GoogleAuthProvider();
         planItemId: it.id,
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
       });
-      showToast("Đã tạo báo cáo ngày " + fmtDateVN(it.day) + " - vào tab Nộp báo cáo để cập nhật kết quả");
+      showToast("Đã tạo báo cáo ngày " + fmtDateVN(it.day) + " - vào tab Kế hoạch ngày để cập nhật kết quả");
       await refreshPlan();
     } catch(e){ showToast("Tạo báo cáo thất bại: " + (e.message||""), true); btn.disabled = false; }
   }
