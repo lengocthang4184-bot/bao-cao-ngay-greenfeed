@@ -661,7 +661,7 @@ const provider = new GoogleAuthProvider();
     if (state.isAdmin) return true;
     return amLead() && !!r.subId && r.subId === mySubId();
   }
-  function ownerLocked(r){ return !!r && r.userId === state.myId && r.draft !== true && lockActive(); }
+  function ownerLocked(r){ return !!r && r.userId === state.myId && !state.isAdmin && r.draft !== true && lockActive(); }
 
   // ---------- AUTH ----------
   // Phát hiện trình duyệt trong ứng dụng (Zalo/Messenger/Instagram/...) - các app này
@@ -1222,8 +1222,12 @@ const provider = new GoogleAuthProvider();
           '<div><label>Con giống (con)</label><input type="number" step="1" class="fCg" placeholder="0" value="'+ (r.conGiong||"") +'"></div>' +
         '</div>' +
         '<div class="row">' +
-          '<div><label>Mở mới <span class="tag">(tùy chọn)</span></label><select class="fMoMoiType">'+typeOptionsHtml(state.moMoiTypes, r.moMoiType)+'</select></div>' +
-          '<div><label>Mở mới (Số KH)</label><input type="number" step="1" class="fMoMoiCount" placeholder="0" value="'+ (r.moMoiSoLuong||"") +'"></div>' +
+          '<div><label>Cơ hội kinh doanh - Phân loại <span class="tag">(tùy chọn)</span></label><select class="fMoMoiType">'+typeOptionsHtml(state.moMoiTypes, r.moMoiType)+'</select></div>' +
+          '<div><label>Trạng thái</label><select class="fMoMoiStatus">'+oppStatusOptionsHtml(r.moMoiStatus)+'</select></div>' +
+        '</div>' +
+        '<div class="row">' +
+          '<div><label>Số lượng</label><input type="number" step="1" class="fMoMoiCount" placeholder="0" value="'+ (r.moMoiSoLuong||"") +'"></div>' +
+          '<div><label>Đơn vị</label><select class="fMoMoiUnit">'+unitOptionsHtml(r.moMoiUnit)+'</select></div>' +
         '</div>' +
         '<label>Tọa độ nơi thực hiện <span class="tag">(tùy chọn)</span></label>' +
         '<div class="geo-row">' +
@@ -1277,8 +1281,10 @@ const provider = new GoogleAuthProvider();
         var cgType = form.querySelector(".fCgType").value;
         var moMoiType = form.querySelector(".fMoMoiType").value;
         var moMoiSoLuong = Number(form.querySelector(".fMoMoiCount").value) || 0;
+        var moMoiStatus = form.querySelector(".fMoMoiStatus").value;
+        var moMoiUnit = form.querySelector(".fMoMoiUnit").value;
         var geo = form.querySelector(".fGeo").value.trim();
-        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg, slType: slType, dtType: dtType, cgType: cgType, moMoiType: moMoiType, moMoiSoLuong: moMoiSoLuong, geo: geo });
+        await setStatus(id, "done", { resultDescription: resultDesc, sanLuong: sl, doanhThu: dt, conGiong: cg, slType: slType, dtType: dtType, cgType: cgType, moMoiType: moMoiType, moMoiSoLuong: moMoiSoLuong, moMoiStatus: moMoiStatus, moMoiUnit: moMoiUnit, geo: geo });
       } else {
         var reason = form.querySelector(".fReason").value.trim();
         if (!reason){ showToast("Vui lòng nhập lý do chưa hoàn thành.", true); return; }
@@ -1291,7 +1297,7 @@ const provider = new GoogleAuthProvider();
     try {
       var payload = Object.assign({ status: status, updatedAt: new Date().toISOString() }, extra || {});
       if (status !== "notdone") payload.reasonNotDone = "";
-      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; payload.slType = ""; payload.dtType = ""; payload.cgType = ""; payload.moMoiType = ""; payload.moMoiSoLuong = 0; payload.geo = ""; }
+      if (status !== "done"){ payload.sanLuong = payload.sanLuong||0; payload.doanhThu = payload.doanhThu||0; payload.conGiong = payload.conGiong||0; payload.resultDescription = ""; payload.slType = ""; payload.dtType = ""; payload.cgType = ""; payload.moMoiType = ""; payload.moMoiSoLuong = 0; payload.moMoiStatus = ""; payload.moMoiUnit = ""; payload.geo = ""; }
       await updateDoc(doc(db, "reports", id), payload);
       state.editingRowId = null; state.editingMode = null;
       refreshMyEntries();
@@ -1423,8 +1429,10 @@ const provider = new GoogleAuthProvider();
         "Loại doanh số": r.dtType || "",
         "Con giống (con)": r.conGiong || 0,
         "Loại con giống": r.cgType || "",
-        "Loại mở mới": r.moMoiType || "",
-        "Số KH mở mới": r.moMoiSoLuong || 0,
+        "Cơ hội KD - Phân loại": r.moMoiType || "",
+        "Cơ hội KD - Trạng thái": oppStatusLabel_(r.moMoiStatus||""),
+        "Cơ hội KD - Số lượng": r.moMoiSoLuong || 0,
+        "Cơ hội KD - Đơn vị": r.moMoiUnit || "",
         "Lý do chưa xong": r.reasonNotDone || "",
         "Số trao đổi": r.commentCount || 0,
         "Cập nhật lúc": updated
@@ -1482,7 +1490,7 @@ const provider = new GoogleAuthProvider();
         '<div class="metric" data-f="conGiong"'+sc+'><div class="num">'+fmtNum(s.conGiong)+' con</div><div class="label">Con giống</div></div>' +
       '</div>' +
       (s.moMoiCount ? '<div class="metric-grid" style="margin-top:8px">' +
-        '<div class="metric" data-f="moMoi"'+sc+' style="grid-column: span 3"><div class="num">'+s.moMoiCount+'</div><div class="label">Mở mới'+(moMoiBreakdown?" — "+esc(moMoiBreakdown):"")+'</div></div>' +
+        '<div class="metric" data-f="moMoi"'+sc+' style="grid-column: span 3"><div class="num">'+s.moMoiCount+'</div><div class="label">Cơ hội kinh doanh'+(moMoiBreakdown?" — "+esc(moMoiBreakdown):"")+'</div></div>' +
       '</div>' : "");
   }
 
@@ -1527,6 +1535,19 @@ const provider = new GoogleAuthProvider();
     return { tinh: tinh, xa: xa };
   }
 
+  var QTY_UNITS = ["Tấn","KH","Heo nái","Heo thịt","Gà thịt","Gà đẻ","Vịt thịt","Vịt đẻ","Cút"];
+  function unitOptionsHtml(selected){
+    return '<option value="">-- ĐV --</option>' + QTY_UNITS.map(function(u){
+      return '<option value="'+esc(u)+'"'+(u===selected?" selected":"")+'>'+esc(u)+'</option>';
+    }).join("");
+  }
+  function oppStatusLabel_(code){ var f = OPP_STATUS.filter(function(p){ return p[0]===code; })[0]; return f ? f[1] : ""; }
+  var OPP_STATUS = [["potential","Tiềm năng"],["new","Mở mới"],["converting","Chuyển đổi"],["single_item","Một mặt hàng"],["upgrade","Nâng cấp"]];
+  function oppStatusOptionsHtml(selected){
+    return '<option value="">-- Trạng thái --</option>' + OPP_STATUS.map(function(p){
+      return '<option value="'+p[0]+'"'+(p[0]===selected?" selected":"")+'>'+p[1]+'</option>';
+    }).join("");
+  }
   function typeOptionsHtml(typesObj, selected){
     var ids = Object.keys(typesObj);
     var html = '<option value="">-- Chọn loại --</option>';
@@ -1543,7 +1564,7 @@ const provider = new GoogleAuthProvider();
     if (r.sanLuong) parts.push("SL: "+fmtNum(r.sanLuong)+" tấn"+(r.slType?" ("+esc(r.slType)+")":""));
     if (r.doanhThu) parts.push("DS: "+fmtNum(r.doanhThu)+" tr"+(r.dtType?" ("+esc(r.dtType)+")":""));
     if (r.conGiong) parts.push("Con giống: "+fmtNum(r.conGiong)+" con"+(r.cgType?" ("+esc(r.cgType)+")":""));
-    if (r.moMoiType) parts.push("Mở mới: "+(r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+" KH ":"")+"("+esc(r.moMoiType)+")");
+    if (r.moMoiType) parts.push("Cơ hội KD: "+(r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+(r.moMoiUnit?" "+esc(r.moMoiUnit):"")+" ":"")+"("+esc(r.moMoiType)+(r.moMoiStatus?" · "+esc(oppStatusLabel_(r.moMoiStatus)):"")+")");
     if (r.geo) parts.push('<a href="https://maps.google.com/?q='+encodeURIComponent(r.geo)+'" target="_blank" rel="noopener">📍 Bản đồ</a>');
     return parts.join(" · ");
   }
@@ -1917,7 +1938,7 @@ const provider = new GoogleAuthProvider();
     $("addCgTypeBtn").addEventListener("click", function(){ addGenericType("cgTypes","cgTypes","newCgTypeName","cgTypeList"); });
     $("seedCgTypeBtn").addEventListener("click", function(){ seedGenericTypes("cgTypes","cgTypes","cgTypeList", ["GF24","Hcs Farm","Hcs LK","Gà giống","Vịt giống","Gà thịt","Vịt thịt","Heo thịt"]); });
     $("addMoMoiTypeBtn").addEventListener("click", function(){ addGenericType("moMoiTypes","moMoiTypes","newMoMoiTypeName","moMoiTypeList"); });
-    $("seedMoMoiTypeBtn").addEventListener("click", function(){ seedGenericTypes("moMoiTypes","moMoiTypes","moMoiTypeList", ["Đại lý","Trại trực tiếp","Hộ nuôi"]); });
+    $("seedMoMoiTypeBtn").addEventListener("click", function(){ seedGenericTypes("moMoiTypes","moMoiTypes","moMoiTypeList", ["Đại lý","Trại trực tiếp","Hộ chăn nuôi"]); });
     var searchTimer = null;
     $("empSearch").addEventListener("input", function(e){
       clearTimeout(searchTimer);
@@ -2304,25 +2325,29 @@ const provider = new GoogleAuthProvider();
       '</div>' +
       '<div class="card" id="plSumCard">' +
         
-        '<div class="muted">Tuần đầu dùng app: anh/chị tự điền tay. Chỉ tính KH <b>mở mới qua đại lý</b>, <b>đại lý/trại lấy trực tiếp công ty</b>, hoặc <b>đã chuyển đổi 100%</b>. KH đang chuyển đổi (chưa 100%) chỉ ghi số lượng theo dõi, không cộng vào tổng.</div>' +
+        '<div class="muted">Cơ hội kinh doanh: chọn <b>Phân loại</b> (Đại lý/Trại trực tiếp/Hộ chăn nuôi) và <b>Trạng thái</b> (Tiềm năng/Mở mới/Chuyển đổi/Một mặt hàng/Nâng cấp). Chỉ <b>Tiềm năng</b> không cộng vào tổng (chưa phát sinh thực tế); 4 trạng thái còn lại đều cộng.</div>' +
         '<h2 style="margin-top:0">1. Kết quả tuần <span id="sumPrevLabel"></span></h2>' +
         '<div class="row"><div><label>Sản lượng TACN (tấn)</label><input type="number" id="sumSlPrev" step="0.1"></div>' +
         '<div><label>Doanh số SPTY (triệu)</label><input type="number" id="sumDtPrev" step="0.1"></div></div>' +
         '<label style="margin-top:6px">Con giống — theo loại</label>' +
         '<div id="cgRowsBox"></div>' +
         '<button class="btn secondary small" id="addCgRowBtn" type="button">+ Thêm loại con giống</button>' +
-        '<label style="margin-top:10px">Mở mới/chuyển đổi — theo loại &amp; trạng thái</label>' +
+        '<label style="margin-top:10px">Cơ hội kinh doanh — theo phân loại &amp; trạng thái</label>' +
         '<div id="mmRowsBox"></div>' +
-        '<button class="btn secondary small" id="addMmRowBtn" type="button">+ Thêm dòng mở mới/chuyển đổi</button>' +
+        '<button class="btn secondary small" id="addMmRowBtn" type="button">+ Thêm dòng cơ hội kinh doanh</button>' +
         '<div class="muted" id="sumTotalsMsg" style="margin-top:6px"></div>' +
         '<h2 style="margin-top:16px">2. Mục tiêu tuần <span id="sumTargetLabel"></span></h2>' +
         '<div class="row"><div><label>Sản lượng TACN (tấn)</label><input type="number" id="sumSlTarget" step="0.1"></div>' +
         '<div><label>Doanh số SPTY (triệu)</label><input type="number" id="sumDtTarget" step="0.1"></div></div>' +
-        '<div class="row"><div><label>Con giống (con)</label><input type="number" id="sumCgTarget"></div>' +
-        '<div><label>Mở mới/chuyển đổi (KH)</label><input type="number" id="sumMmTarget"></div></div>' +
+        '<label style="margin-top:6px">Con giống — theo loại</label>' +
+        '<div id="cgTargetRowsBox"></div>' +
+        '<button class="btn secondary small" id="addCgTargetRowBtn" type="button">+ Thêm loại con giống</button>' +
+        '<label style="margin-top:10px">Cơ hội kinh doanh — theo phân loại &amp; trạng thái</label>' +
+        '<div id="mmTargetRowsBox"></div>' +
+        '<button class="btn secondary small" id="addMmTargetRowBtn" type="button">+ Thêm dòng cơ hội kinh doanh</button>' +
         '<h2 style="margin-top:16px">3. Phối hợp cấp trên / Kỹ thuật heo / Kỹ thuật gia cầm</h2>' +
         '<textarea id="sumSupport" rows="2" placeholder="Việc cần Sub, GDKD, hoặc AE kỹ thuật hỗ trợ..."></textarea>' +
-        '<button class="btn" id="sumSaveBtn" style="margin-top:10px;width:100%">Lưu mục 1-2-5</button>' +
+        '<button class="btn" id="sumSaveBtn" style="margin-top:10px;width:100%">Lưu mục 1-2-3</button>' +
         '<div id="sumSaveMsg" class="muted" style="margin-top:6px"></div>' +
       '</div>' +
       '<div class="card" id="plTopCard">' +
@@ -2359,8 +2384,10 @@ const provider = new GoogleAuthProvider();
     });
     $("plAddBtn").onclick = addPlanItem;
     $("sumSaveBtn").onclick = savePlanSummary;
-    $("addCgRowBtn").onclick = function(){ syncCgRows(); state.sumCgRows.push({type:"",qty:0}); renderCgRows(); };
-    $("addMmRowBtn").onclick = function(){ syncMmRows(); state.sumMmRows.push({type:"",status:"full",qty:0}); renderMmRows(); };
+    $("addCgRowBtn").onclick = function(){ syncCgRowsIn("cgRowsBox","sumCgRows"); state.sumCgRows.push({type:"",qty:0}); renderCgRowsIn("cgRowsBox","sumCgRows"); };
+    $("addMmRowBtn").onclick = function(){ syncMmRowsIn("mmRowsBox","sumMmRows"); state.sumMmRows.push({type:"",status:"",unit:"",qty:0}); renderMmRowsIn("mmRowsBox","sumMmRows"); };
+    $("addCgTargetRowBtn").onclick = function(){ syncCgRowsIn("cgTargetRowsBox","sumCgTargetRows"); state.sumCgTargetRows.push({type:"",qty:0}); renderCgRowsIn("cgTargetRowsBox","sumCgTargetRows"); };
+    $("addMmTargetRowBtn").onclick = function(){ syncMmRowsIn("mmTargetRowsBox","sumMmTargetRows"); state.sumMmTargetRows.push({type:"",status:"",unit:"",qty:0}); renderMmRowsIn("mmTargetRowsBox","sumMmTargetRows"); };
     $("topTaskSaveBtn").onclick = saveTopTasks;
     refreshPlan();
   }
@@ -2372,38 +2399,40 @@ const provider = new GoogleAuthProvider();
       '</div><button class="btn secondary small cgRowDel" data-i="'+i+'" type="button" style="margin:4px 0 10px">Xóa dòng</button>';
   }
   function mmRowHtml(i, row){
-    return '<div class="row" data-i="'+i+'" style="align-items:flex-end">' +
-      '<div><label>Loại nguồn</label><select class="mmRowType">'+typeOptionsHtml(state.moMoiTypes, row.type)+'</select></div>' +
-      '<div><label>Trạng thái</label><select class="mmRowStatus">' +
-        '<option value="full"'+(row.status==="full"?" selected":"")+'>Mở mới / Đã chuyển đổi 100% (cộng số)</option>' +
-        '<option value="partial"'+(row.status==="partial"?" selected":"")+'>Đang chuyển đổi, chưa 100% (không cộng số)</option>' +
-      '</select></div>' +
-      '<div><label>Số lượng (KH)</label><input type="number" class="mmRowQty" value="'+(row.qty||"")+'"></div>' +
+    return '<div class="planRow" data-i="'+i+'">' +
+      '<div class="row" style="align-items:flex-end">' +
+        '<div><label>Phân loại</label><select class="mmRowType">'+typeOptionsHtml(state.moMoiTypes, row.type)+'</select></div>' +
+        '<div><label>Trạng thái</label><select class="mmRowStatus">'+oppStatusOptionsHtml(row.status)+'</select></div>' +
       '</div>' +
-      '<button class="btn secondary small mmRowDel" data-i="'+i+'" type="button" style="margin:4px 0 10px">Xóa dòng</button>';
+      '<div class="row" style="align-items:flex-end">' +
+        '<div><label>Số lượng</label><input type="number" class="mmRowQty" value="'+(row.qty||"")+'"></div>' +
+        '<div><label>Đơn vị</label><select class="mmRowUnit">'+unitOptionsHtml(row.unit)+'</select></div>' +
+      '</div>' +
+      '<button class="btn secondary small mmRowDel" data-i="'+i+'" type="button" style="margin:4px 0 10px">Xóa dòng</button>' +
+    '</div>';
   }
-  function renderCgRows(){
-    $("cgRowsBox").innerHTML = (state.sumCgRows||[]).map(cgRowHtml).join("");
-    $("cgRowsBox").querySelectorAll(".cgRowDel").forEach(function(b){
-      b.onclick = function(){ syncCgRows(); state.sumCgRows.splice(Number(b.dataset.i),1); renderCgRows(); };
+  function renderCgRowsIn(boxId, stateKey){
+    $(boxId).innerHTML = (state[stateKey]||[]).map(cgRowHtml).join("");
+    $(boxId).querySelectorAll(".cgRowDel").forEach(function(b){
+      b.onclick = function(){ syncCgRowsIn(boxId, stateKey); state[stateKey].splice(Number(b.dataset.i),1); renderCgRowsIn(boxId, stateKey); };
     });
   }
-  function renderMmRows(){
-    $("mmRowsBox").innerHTML = (state.sumMmRows||[]).map(mmRowHtml).join("");
-    $("mmRowsBox").querySelectorAll(".mmRowDel").forEach(function(b){
-      b.onclick = function(){ syncMmRows(); state.sumMmRows.splice(Number(b.dataset.i),1); renderMmRows(); };
+  function renderMmRowsIn(boxId, stateKey){
+    $(boxId).innerHTML = (state[stateKey]||[]).map(mmRowHtml).join("");
+    $(boxId).querySelectorAll(".mmRowDel").forEach(function(b){
+      b.onclick = function(){ syncMmRowsIn(boxId, stateKey); state[stateKey].splice(Number(b.dataset.i),1); renderMmRowsIn(boxId, stateKey); };
     });
   }
-  function syncCgRows(){
-    var boxes = $("cgRowsBox").querySelectorAll(".row[data-i]");
-    state.sumCgRows = Array.prototype.map.call(boxes, function(el){
+  function syncCgRowsIn(boxId, stateKey){
+    var boxes = $(boxId).querySelectorAll(".planRow[data-i]");
+    state[stateKey] = Array.prototype.map.call(boxes, function(el){
       return { type: el.querySelector(".cgRowType").value, qty: Number(el.querySelector(".cgRowQty").value) || 0 };
     });
   }
-  function syncMmRows(){
-    var boxes = $("mmRowsBox").querySelectorAll(".row[data-i]");
-    state.sumMmRows = Array.prototype.map.call(boxes, function(el){
-      return { type: el.querySelector(".mmRowType").value, status: el.querySelector(".mmRowStatus").value, qty: Number(el.querySelector(".mmRowQty").value) || 0 };
+  function syncMmRowsIn(boxId, stateKey){
+    var boxes = $(boxId).querySelectorAll(".planRow[data-i]");
+    state[stateKey] = Array.prototype.map.call(boxes, function(el){
+      return { type: el.querySelector(".mmRowType").value, status: el.querySelector(".mmRowStatus").value, unit: el.querySelector(".mmRowUnit").value, qty: Number(el.querySelector(".mmRowQty").value) || 0 };
     });
   }
 
@@ -2426,13 +2455,16 @@ const provider = new GoogleAuthProvider();
   async function savePlanSummary(){
     var uid = state.planUser || state.myId, ws = state.planWeek;
     var v = function(id){ return Number($(id).value) || 0; };
-    syncCgRows(); syncMmRows();
-    var cgTotal = state.sumCgRows.reduce(function(x,r){ return x + r.qty; }, 0);
-    var mmTotal = state.sumMmRows.filter(function(r){ return r.status !== "partial"; }).reduce(function(x,r){ return x + r.qty; }, 0);
-    var mmPartial = state.sumMmRows.filter(function(r){ return r.status === "partial"; }).reduce(function(x,r){ return x + r.qty; }, 0);
+    syncCgRowsIn("cgRowsBox","sumCgRows"); syncMmRowsIn("mmRowsBox","sumMmRows");
+    syncCgRowsIn("cgTargetRowsBox","sumCgTargetRows"); syncMmRowsIn("mmTargetRowsBox","sumMmTargetRows");
+    var sumQty = function(rows){ return rows.reduce(function(x,r){ return x + r.qty; }, 0); };
+    var oppReal = function(rows){ return rows.filter(function(r){ return r.status && r.status !== "potential"; }).reduce(function(x,r){ return x + r.qty; }, 0); };
+    var oppPotential = function(rows){ return rows.filter(function(r){ return r.status === "potential"; }).reduce(function(x,r){ return x + r.qty; }, 0); };
+    var cgTotal = sumQty(state.sumCgRows), mmTotal = oppReal(state.sumMmRows), mmPotential = oppPotential(state.sumMmRows);
+    var cgTargetTotal = sumQty(state.sumCgTargetRows), mmTargetTotal = oppReal(state.sumMmTargetRows);
     var data = {
-      prevWeek: { sl: v("sumSlPrev"), dt: v("sumDtPrev"), cgRows: state.sumCgRows, cg: cgTotal, mmRows: state.sumMmRows, mm: mmTotal, mmPartial: mmPartial },
-      target: { sl: v("sumSlTarget"), dt: v("sumDtTarget"), cg: v("sumCgTarget"), mm: v("sumMmTarget") },
+      prevWeek: { sl: v("sumSlPrev"), dt: v("sumDtPrev"), cgRows: state.sumCgRows, cg: cgTotal, mmRows: state.sumMmRows, mm: mmTotal, mmPotential: mmPotential },
+      target: { sl: v("sumSlTarget"), dt: v("sumDtTarget"), cgRows: state.sumCgTargetRows, cg: cgTargetTotal, mmRows: state.sumMmTargetRows, mm: mmTargetTotal },
       support: $("sumSupport").value || "",
       userId: uid, subId: (state.team[uid]||{}).subId || "", subName: (state.team[uid]||{}).subName || ""
     };
@@ -2440,7 +2472,7 @@ const provider = new GoogleAuthProvider();
     try {
       await setDoc(doc(db, "weekPlans", planDocId(uid, ws)), data, { merge: true });
       state.planData = Object.assign({}, state.planData, { prevWeek: data.prevWeek, target: data.target, support: data.support });
-      $("sumSaveMsg").textContent = "✅ Đã lưu (Con giống: "+fmtNum(cgTotal)+" · Mở mới/chuyển đổi tính: "+fmtNum(mmTotal)+" · đang chuyển đổi (chưa cộng): "+fmtNum(mmPartial)+")";
+      $("sumSaveMsg").textContent = "✅ Đã lưu (Con giống tuần trước: "+fmtNum(cgTotal)+" · Cơ hội kinh doanh tính: "+fmtNum(mmTotal)+" · tiềm năng (chưa cộng): "+fmtNum(mmPotential)+")";
     } catch(e){ $("sumSaveMsg").textContent = "❌ Lỗi: " + (e.message || ""); }
   }
 
@@ -2478,9 +2510,10 @@ const provider = new GoogleAuthProvider();
       var pw = plan.prevWeek || {}, tg = plan.target || {};
       $("sumSlPrev").value = pw.sl || ""; $("sumDtPrev").value = pw.dt || "";
       state.sumCgRows = (pw.cgRows || []).slice(); state.sumMmRows = (pw.mmRows || []).slice();
-      renderCgRows(); renderMmRows();
+      renderCgRowsIn("cgRowsBox","sumCgRows"); renderMmRowsIn("mmRowsBox","sumMmRows");
+      state.sumCgTargetRows = (tg.cgRows || []).slice(); state.sumMmTargetRows = (tg.mmRows || []).slice();
+      renderCgRowsIn("cgTargetRowsBox","sumCgTargetRows"); renderMmRowsIn("mmTargetRowsBox","sumMmTargetRows");
       $("sumSlTarget").value = tg.sl || ""; $("sumDtTarget").value = tg.dt || "";
-      $("sumCgTarget").value = tg.cg || ""; $("sumMmTarget").value = tg.mm || "";
       $("sumSupport").value = plan.support || "";
       $("plSumCard").querySelectorAll("input,select,textarea,button").forEach(function(el){ el.disabled = !canEdit; });
       var tt = plan.topTasks || [];
@@ -3259,7 +3292,7 @@ const provider = new GoogleAuthProvider();
     sanLuong: { t: "Sản lượng TACN (tấn)", f: function(r){ return Number(r.sanLuong) > 0; }, v: function(r){ return fmtNum(r.sanLuong)+" tấn"+(r.slType?" · "+r.slType:""); } },
     doanhThu: { t: "Doanh số (tr)", f: function(r){ return Number(r.doanhThu) > 0; }, v: function(r){ return fmtNum(r.doanhThu)+" tr"+(r.dtType?" · "+r.dtType:""); } },
     conGiong: { t: "Con giống", f: function(r){ return Number(r.conGiong) > 0; }, v: function(r){ return fmtNum(r.conGiong)+" con"+(r.cgType?" · "+r.cgType:""); } },
-    moMoi: { t: "Mở mới", f: function(r){ return !!r.moMoiType; }, v: function(r){ return (r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+" KH · ":"")+r.moMoiType; } }
+    moMoi: { t: "Cơ hội kinh doanh", f: function(r){ return !!r.moMoiType; }, v: function(r){ return (r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+(r.moMoiUnit?" "+r.moMoiUnit:"")+" · ":"")+r.moMoiType+(r.moMoiStatus?" · "+oppStatusLabel_(r.moMoiStatus):""); } }
   };
   document.addEventListener("click", function(e){
     var el = e.target.closest && e.target.closest("[data-f]");
