@@ -2289,32 +2289,42 @@ const provider = new GoogleAuthProvider();
         userPicker +
       '</div>' +
       '<div class="card" id="plSumCard">' +
-        '<h2>1-2. Kết quả tuần trước & Mục tiêu tuần này</h2>' +
+        '<h2>1-2-3. Kết quả tuần trước, Mục tiêu tuần này & Phối hợp</h2>' +
         '<div class="muted">Tuần đầu dùng app: anh/chị tự điền tay. Chỉ tính KH <b>mở mới qua đại lý</b>, <b>đại lý/trại lấy trực tiếp công ty</b>, hoặc <b>đã chuyển đổi 100%</b>. KH đang chuyển đổi (chưa 100%) chỉ ghi số lượng theo dõi, không cộng vào tổng.</div>' +
         '<b style="display:block;margin-top:8px">Kết quả tuần trước</b>' +
         '<div class="row"><div><label>Sản lượng cám (tấn)</label><input type="number" id="sumSlPrev" step="0.1"></div>' +
         '<div><label>Doanh thu SPTY (triệu)</label><input type="number" id="sumDtPrev" step="0.1"></div></div>' +
-        '<div class="row"><div><label>Con giống (con)</label><input type="number" id="sumCgPrev"></div>' +
-        '<div><label>Mở mới/chuyển đổi (KH)</label><input type="number" id="sumMmPrev"></div></div>' +
-        '<label>Loại mở mới/chuyển đổi</label><select id="sumMmTypePrev">' +
-          '<option value="">-- chọn --</option>' +
-          '<option value="daily">Mở hộ chăn nuôi mới qua đại lý</option>' +
-          '<option value="direct">Đại lý/Trại mới lấy trực tiếp công ty</option>' +
-          '<option value="full">Đã chuyển đổi 100%</option>' +
-          '<option value="partial">Đang chuyển đổi (chưa 100%, không cộng số)</option>' +
-        '</select>' +
+        '<label style="margin-top:6px">Con giống — theo loại</label>' +
+        '<div id="cgRowsBox"></div>' +
+        '<button class="btn secondary small" id="addCgRowBtn" type="button">+ Thêm loại con giống</button>' +
+        '<label style="margin-top:10px">Mở mới/chuyển đổi — theo loại &amp; trạng thái</label>' +
+        '<div id="mmRowsBox"></div>' +
+        '<button class="btn secondary small" id="addMmRowBtn" type="button">+ Thêm dòng mở mới/chuyển đổi</button>' +
+        '<div class="muted" id="sumTotalsMsg" style="margin-top:6px"></div>' +
         '<b style="display:block;margin-top:12px">Mục tiêu tuần này</b>' +
         '<div class="row"><div><label>Sản lượng cám (tấn)</label><input type="number" id="sumSlTarget" step="0.1"></div>' +
         '<div><label>Doanh thu SPTY (triệu)</label><input type="number" id="sumDtTarget" step="0.1"></div></div>' +
         '<div class="row"><div><label>Con giống (con)</label><input type="number" id="sumCgTarget"></div>' +
         '<div><label>Mở mới/chuyển đổi (KH)</label><input type="number" id="sumMmTarget"></div></div>' +
-        '<b style="display:block;margin-top:12px">5. Phối hợp cấp trên / Kỹ thuật heo / Kỹ thuật gia cầm</b>' +
+        '<b style="display:block;margin-top:12px">3. Phối hợp cấp trên / Kỹ thuật heo / Kỹ thuật gia cầm</b>' +
         '<textarea id="sumSupport" rows="2" placeholder="Việc cần Sub, GDKD, hoặc AE kỹ thuật hỗ trợ..."></textarea>' +
         '<button class="btn" id="sumSaveBtn" style="margin-top:10px;width:100%">Lưu mục 1-2-5</button>' +
         '<div id="sumSaveMsg" class="muted" style="margin-top:6px"></div>' +
       '</div>' +
+      '<div class="card" id="plTopCard">' +
+        '<h2>4. Hoạt động trọng tâm <span class="muted" style="font-weight:400">(tối đa 3 việc quan trọng nhất tuần này)</span></h2>' +
+        [0,1,2].map(function(i){
+          return '<div style="border-top:1px dashed var(--border);padding-top:8px;margin-top:8px">' +
+            '<label>Việc trọng tâm '+(i+1)+'</label><input type="text" class="topTaskText" data-i="'+i+'" placeholder="VD: Chốt đơn trại Nguyễn Văn Hùng">' +
+            '<div class="row"><div><label>Đo bằng gì</label><input type="text" class="topTaskMeasure" data-i="'+i+'" placeholder="VD: 8 tấn"></div>' +
+            '<div><label>Xong trước ngày</label><input type="date" class="topTaskDeadline" data-i="'+i+'"></div></div>' +
+          '</div>';
+        }).join("") +
+        '<button class="btn" id="topTaskSaveBtn" style="margin-top:10px;width:100%">Lưu mục 4</button>' +
+        '<div id="topTaskMsg" class="muted" style="margin-top:6px"></div>' +
+      '</div>' +
       '<div class="card" id="plAddCard">' +
-        '<h2>+ Thêm việc vào kế hoạch</h2>' +
+        '<h2>5. Công việc chính <span class="muted" style="font-weight:400">— thêm việc vào lịch từng ngày</span></h2>' +
         '<div class="row"><div><label>Ngày</label><select id="plDay"></select></div>' +
         '<div><label>Loại đầu việc</label><select id="plCat">'+catOptions+'</select></div></div>' +
         '<label>Với ai <span class="tag">(tùy chọn)</span></label><input type="text" id="plCustomer" placeholder="Tên trại, khách hàng...">' +
@@ -2329,14 +2339,77 @@ const provider = new GoogleAuthProvider();
     if ($("plUser")) $("plUser").onchange = function(e){ state.planUser = e.target.value; refreshPlan(); };
     $("plAddBtn").onclick = addPlanItem;
     $("sumSaveBtn").onclick = savePlanSummary;
+    $("addCgRowBtn").onclick = function(){ syncCgRows(); state.sumCgRows.push({type:"",qty:0}); renderCgRows(); };
+    $("addMmRowBtn").onclick = function(){ syncMmRows(); state.sumMmRows.push({type:"",status:"full",qty:0}); renderMmRows(); };
+    $("topTaskSaveBtn").onclick = saveTopTasks;
     refreshPlan();
+  }
+
+  function cgRowHtml(i, row){
+    return '<div class="row" data-i="'+i+'" style="align-items:flex-end">' +
+      '<div><label>Loại</label><select class="cgRowType">'+typeOptionsHtml(state.cgTypes, row.type)+'</select></div>' +
+      '<div><label>Số lượng (con)</label><input type="number" class="cgRowQty" value="'+(row.qty||"")+'"></div>' +
+      '</div><button class="btn secondary small cgRowDel" data-i="'+i+'" type="button" style="margin:4px 0 10px">Xóa dòng</button>';
+  }
+  function mmRowHtml(i, row){
+    return '<div class="row" data-i="'+i+'" style="align-items:flex-end">' +
+      '<div><label>Loại nguồn</label><select class="mmRowType">'+typeOptionsHtml(state.moMoiTypes, row.type)+'</select></div>' +
+      '<div><label>Trạng thái</label><select class="mmRowStatus">' +
+        '<option value="full"'+(row.status==="full"?" selected":"")+'>Mở mới / Đã chuyển đổi 100% (cộng số)</option>' +
+        '<option value="partial"'+(row.status==="partial"?" selected":"")+'>Đang chuyển đổi, chưa 100% (không cộng số)</option>' +
+      '</select></div></div>' +
+      '<label>Số lượng (KH)</label><input type="number" class="mmRowQty" value="'+(row.qty||"")+'">' +
+      '<button class="btn secondary small mmRowDel" data-i="'+i+'" type="button" style="margin:4px 0 10px">Xóa dòng</button>';
+  }
+  function renderCgRows(){
+    $("cgRowsBox").innerHTML = (state.sumCgRows||[]).map(cgRowHtml).join("");
+    $("cgRowsBox").querySelectorAll(".cgRowDel").forEach(function(b){
+      b.onclick = function(){ state.sumCgRows.splice(Number(b.dataset.i),1); syncCgRows(); renderCgRows(); };
+    });
+  }
+  function renderMmRows(){
+    $("mmRowsBox").innerHTML = (state.sumMmRows||[]).map(mmRowHtml).join("");
+    $("mmRowsBox").querySelectorAll(".mmRowDel").forEach(function(b){
+      b.onclick = function(){ state.sumMmRows.splice(Number(b.dataset.i),1); syncMmRows(); renderMmRows(); };
+    });
+  }
+  function syncCgRows(){
+    var boxes = $("cgRowsBox").querySelectorAll(".row[data-i]");
+    state.sumCgRows = Array.prototype.map.call(boxes, function(el){
+      return { type: el.querySelector(".cgRowType").value, qty: Number(el.querySelector(".cgRowQty").value) || 0 };
+    });
+  }
+  function syncMmRows(){
+    var boxes = $("mmRowsBox").querySelectorAll(".row[data-i]");
+    state.sumMmRows = Array.prototype.map.call(boxes, function(el){
+      return { type: el.querySelector(".mmRowType").value, status: el.querySelector(".mmRowStatus").value, qty: Number(el.querySelector(".mmRowQty").value) || 0 };
+    });
+  }
+
+  async function saveTopTasks(){
+    var uid = state.planUser || state.myId, ws = state.planWeek;
+    var tasks = [0,1,2].map(function(i){
+      var t = document.querySelector('.topTaskText[data-i="'+i+'"]').value.trim();
+      var m = document.querySelector('.topTaskMeasure[data-i="'+i+'"]').value.trim();
+      var d = document.querySelector('.topTaskDeadline[data-i="'+i+'"]').value;
+      return { text: t, measure: m, deadline: d };
+    }).filter(function(t){ return t.text; });
+    $("topTaskMsg").textContent = "Đang lưu...";
+    try {
+      await setDoc(doc(db, "weekPlans", planDocId(uid, ws)), { topTasks: tasks, userId: uid }, { merge: true });
+      $("topTaskMsg").textContent = "✅ Đã lưu " + tasks.length + " việc trọng tâm";
+    } catch(e){ $("topTaskMsg").textContent = "❌ Lỗi: " + (e.message || ""); }
   }
 
   async function savePlanSummary(){
     var uid = state.planUser || state.myId, ws = state.planWeek;
     var v = function(id){ return Number($(id).value) || 0; };
+    syncCgRows(); syncMmRows();
+    var cgTotal = state.sumCgRows.reduce(function(x,r){ return x + r.qty; }, 0);
+    var mmTotal = state.sumMmRows.filter(function(r){ return r.status !== "partial"; }).reduce(function(x,r){ return x + r.qty; }, 0);
+    var mmPartial = state.sumMmRows.filter(function(r){ return r.status === "partial"; }).reduce(function(x,r){ return x + r.qty; }, 0);
     var data = {
-      prevWeek: { sl: v("sumSlPrev"), dt: v("sumDtPrev"), cg: v("sumCgPrev"), mm: v("sumMmPrev"), mmType: $("sumMmTypePrev").value },
+      prevWeek: { sl: v("sumSlPrev"), dt: v("sumDtPrev"), cgRows: state.sumCgRows, cg: cgTotal, mmRows: state.sumMmRows, mm: mmTotal, mmPartial: mmPartial },
       target: { sl: v("sumSlTarget"), dt: v("sumDtTarget"), cg: v("sumCgTarget"), mm: v("sumMmTarget") },
       support: $("sumSupport").value || "",
       userId: uid, subId: (state.team[uid]||{}).subId || "", subName: (state.team[uid]||{}).subName || ""
@@ -2344,7 +2417,7 @@ const provider = new GoogleAuthProvider();
     $("sumSaveMsg").textContent = "Đang lưu...";
     try {
       await setDoc(doc(db, "weekPlans", planDocId(uid, ws)), data, { merge: true });
-      $("sumSaveMsg").textContent = "✅ Đã lưu";
+      $("sumSaveMsg").textContent = "✅ Đã lưu (Con giống: "+fmtNum(cgTotal)+" · Mở mới/chuyển đổi tính: "+fmtNum(mmTotal)+" · đang chuyển đổi (chưa cộng): "+fmtNum(mmPartial)+")";
     } catch(e){ $("sumSaveMsg").textContent = "❌ Lỗi: " + (e.message || ""); }
   }
 
@@ -2376,12 +2449,20 @@ const provider = new GoogleAuthProvider();
     (function(){
       var pw = plan.prevWeek || {}, tg = plan.target || {};
       $("sumSlPrev").value = pw.sl || ""; $("sumDtPrev").value = pw.dt || "";
-      $("sumCgPrev").value = pw.cg || ""; $("sumMmPrev").value = pw.mm || "";
-      $("sumMmTypePrev").value = pw.mmType || "";
+      state.sumCgRows = (pw.cgRows || []).slice(); state.sumMmRows = (pw.mmRows || []).slice();
+      renderCgRows(); renderMmRows();
       $("sumSlTarget").value = tg.sl || ""; $("sumDtTarget").value = tg.dt || "";
       $("sumCgTarget").value = tg.cg || ""; $("sumMmTarget").value = tg.mm || "";
       $("sumSupport").value = plan.support || "";
       $("plSumCard").querySelectorAll("input,select,textarea,button").forEach(function(el){ el.disabled = !canEdit; });
+      var tt = plan.topTasks || [];
+      [0,1,2].forEach(function(i){
+        var t = tt[i] || {};
+        document.querySelector('.topTaskText[data-i="'+i+'"]').value = t.text || "";
+        document.querySelector('.topTaskMeasure[data-i="'+i+'"]').value = t.measure || "";
+        document.querySelector('.topTaskDeadline[data-i="'+i+'"]').value = t.deadline || "";
+      });
+      $("plTopCard").querySelectorAll("input,button").forEach(function(el){ el.disabled = !canEdit; });
     })();
     renderPlanResult(plan.items || [], reports, days, canEdit);
   }
