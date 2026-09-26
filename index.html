@@ -195,6 +195,17 @@
   .kpi-bar .kpi-fill { position:absolute; left:0; top:0; bottom:0; background: linear-gradient(90deg, #7cc59b, var(--gf-green)); }
   .kpi-bar span { position: relative; display:block; text-align:center; line-height: 28px; font-size: 12.5px; }
   @media (max-width: 560px){ .chart-grid { grid-template-columns: 1fr; } }
+  /* --- Lưu tạm / Gửi báo cáo, quyền quản lý --- */
+  .draft-tag { display:inline-block; font-size:10.5px; font-weight:700; background:#fff3cd; color:#8a6d00; border:1px solid #f0d27a; border-radius:999px; padding:1px 7px; margin-left:4px; }
+  .submit-bar { margin-top:12px; padding:10px 12px; border:1px dashed var(--gf-green); border-radius:10px; background:#fbfffc; }
+  .sent-ok { font-size:13px; color:var(--gf-green-dark); font-weight:600; }
+  .lead-tag { display:inline-block; font-size:10.5px; font-weight:700; background:#fde68a; color:#7a5b00; border-radius:999px; padding:1px 7px; margin-left:4px; }
+  .mg-btn { border:1px solid var(--border); background:var(--bg); border-radius:6px; font-size:12px; padding:2px 6px; cursor:pointer; }
+  #editOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:999; align-items:flex-end; justify-content:center; }
+  #editOverlay.open { display:flex; }
+  #editModal { background:#fff; width:100%; max-width:560px; max-height:88vh; overflow-y:auto; border-radius:16px 16px 0 0; padding:14px 16px 18px; }
+  #editModal .em-head { display:flex; justify-content:space-between; align-items:center; font-size:15px; font-weight:700; margin-bottom:6px; }
+  #editModal .em-head button { border:none; background:none; font-size:22px; cursor:pointer; color:var(--text-muted); }
   /* --- Gán nhân viên vào Sub --- */
   .assign-sum { font-size: 12.5px; padding: 6px 10px; margin: 8px 0 4px; background: var(--bg); border-radius: 8px; }
   .search-hit.assigned { background: var(--gf-green-light); border-radius: 8px; padding-left: 8px; padding-right: 8px; }
@@ -362,6 +373,10 @@ const provider = new GoogleAuthProvider();
     attach(query(collection(db, "reports"), where("userId","==",state.myId)));
     if (state.isAdmin){
       attach(query(collection(db, "reports"), where("date","==",todayStr())));
+    } else {
+      getDoc(doc(db, "team", state.myId)).then(function(ts){
+        if (ts.exists() && ts.data().subId) attach(query(collection(db, "reports"), where("subId","==",ts.data().subId), where("date","==",todayStr())));
+      }).catch(function(){});
     }
   }
 
@@ -575,6 +590,27 @@ const provider = new GoogleAuthProvider();
 
   function $(id){ return document.getElementById(id); }
 
+  // ---------- PHÂN QUYỀN ----------
+  // GDKD (quản trị): xem/sửa tất cả. Quản lý Sub (người có tên trùng tên Sub): xem/sửa báo cáo cả Sub.
+  // Sales: xem báo cáo cả Sub, bình luận được, không sửa báo cáo người khác.
+  var LOCK_TS = Date.UTC(2026, 8, 30, 17, 0, 0); // 01/10/2026 00:00 giờ Việt Nam: bắt đầu khoá báo cáo đã gửi
+  function lockActive(){ return Date.now() >= LOCK_TS; }
+  function normWords(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\u0111/g,"d").replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(Boolean); }
+  function isNameLeadOf(userName, subName){
+    var key = normWords(String(subName||"").replace(/^\s*sub\s+/i,""));
+    if (!key.length) return false;
+    var words = normWords(userName);
+    return key.every(function(k){ return words.indexOf(k) !== -1; });
+  }
+  function mySubId(){ var t = state.team[state.myId]; return t ? t.subId : null; }
+  function amLead(){ var t = state.team[state.myId]; return !!(t && t.isLead); }
+  function canManageReport(r){
+    if (!r || r.userId === state.myId) return false;
+    if (state.isAdmin) return true;
+    return amLead() && !!r.subId && r.subId === mySubId();
+  }
+  function ownerLocked(r){ return !!r && r.userId === state.myId && r.draft !== true && lockActive(); }
+
   // ---------- AUTH ----------
   // Phát hiện trình duyệt trong ứng dụng (Zalo/Messenger/Instagram/...) - các app này
   // thường chặn/sandbox sessionStorage nên đăng nhập Google bằng popup sẽ báo lỗi
@@ -723,6 +759,21 @@ const provider = new GoogleAuthProvider();
         state.allUsers = {};
         usersSnap.forEach(function(d){ state.allUsers[d.id] = d.data(); });
       } catch(e){}
+      try { await syncSubLeads(); } catch(e){}
+    }
+  }
+
+  // Tự xác định Quản lý Sub theo tên (VD: "Le Nam" là quản lý "Sub Nam") và lưu vào team/{uid}.isLead
+  async function syncSubLeads(){
+    var uids = Object.keys(state.team);
+    for (var i = 0; i < uids.length; i++){
+      var uid = uids[i], t = state.team[uid], u = state.allUsers[uid] || {};
+      var sub = state.subs[t.subId] || {};
+      var lead = isNameLeadOf(u.name, sub.name || t.subName);
+      if (!!t.isLead !== lead){
+        await updateDoc(doc(db, "team", uid), { isLead: lead });
+        t.isLead = lead;
+      }
     }
   }
 
@@ -773,7 +824,7 @@ const provider = new GoogleAuthProvider();
           '<label>Tại sao <span class="tag">(tùy chọn)</span></label>' +
           '<input type="text" id="rWhy" placeholder="Mục đích / lý do thực hiện...">' +
         '</div>' +
-        '<button class="btn" id="rSubmit">+ Thêm vào bảng (chưa cần chọn trạng thái)</button>' +
+        '<button class="btn" id="rSubmit">+ Thêm vào bảng (lưu tạm)</button>' +
       '</div>' +
       '<div class="card">' +
         '<h2>Bảng đầu việc - <span id="rDateLabel">'+fmtDateVN(state.reportDate)+'</span></h2>' +
@@ -830,6 +881,7 @@ const provider = new GoogleAuthProvider();
         status: "pending",
         reasonNotDone: "",
         sanLuong: 0, doanhThu: 0, conGiong: 0, moMoiType: "", moMoiSoLuong: 0, geo: "",
+        draft: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -838,7 +890,7 @@ const provider = new GoogleAuthProvider();
     } catch(e){
       showToast("Lưu thất bại: " + (e && e.message ? e.message : "lỗi không xác định"), true);
     }
-    btn.disabled = false; btn.textContent = "+ Thêm vào bảng (chưa cần chọn trạng thái)";
+    btn.disabled = false; btn.textContent = "+ Thêm vào bảng (lưu tạm)";
   }
 
   async function refreshMyEntries(){
@@ -891,7 +943,7 @@ const provider = new GoogleAuthProvider();
         html += '<tr>' +
           '<td class="stt">'+(idx+1)+'</td>' +
           '<td class="content-cell">' +
-            '<b>'+esc(r.categoryName || "")+'</b>' +
+            '<b>'+esc(r.categoryName || "")+'</b>' + (r.draft === true ? '<span class="draft-tag">Nháp</span>' : '') +
             (r.description ? '<div class="cmeta"><b class="k">Mô tả chi tiết:</b>&nbsp;'+esc(r.description)+'</div>' : "") +
             extrasLineHtml(r, "cmeta") +
           '</td>' +
@@ -905,14 +957,23 @@ const provider = new GoogleAuthProvider();
             '</div>' +
           '</td>' +
           '<td class="result-cell">'+resultText+'</td>' +
-          '<td class="del-cell"><a data-del="'+esc(d)+'" title="Xóa">✕</a></td>' +
+          '<td class="del-cell">'+(ownerLocked(r) ? '<span title="Đã gửi - chỉ quản lý mới xoá được">🔒</span>' : '<a data-del="'+esc(d)+'" title="Xóa">✕</a>')+'</td>' +
         '</tr>';
         if (isEditing){
           html += '<tr class="inline-form-row"><td colspan="5">' + renderInlineForm(d, r) + '</td></tr>';
         }
       });
       html += '</tbody></table></div>';
+      var drafts = docs.filter(function(x){ return x.data.draft === true; });
+      var sentTimes = docs.filter(function(x){ return x.data.draft !== true && x.data.submittedAt; }).map(function(x){ return x.data.submittedAt; }).sort();
+      html += '<div class="submit-bar">' + (drafts.length
+        ? '<div class="muted">Có <b>'+drafts.length+'</b> đầu việc đang <b>lưu tạm</b> (chỉ mình bạn thấy). ' +
+            (lockActive() ? 'Sau khi gửi sẽ <b>không sửa/xoá</b> được nội dung, vẫn cập nhật được kết quả.' : 'Từ 01/10: sau khi gửi sẽ không sửa/xoá được nội dung, vẫn cập nhật được kết quả.') + '</div>' +
+          '<button class="btn" id="sendDayBtn" style="width:100%;margin-top:8px">📤 Gửi báo cáo ngày ('+drafts.length+' đầu việc)</button>'
+        : '<div class="sent-ok">✅ Đã gửi báo cáo'+(sentTimes.length ? ' lúc '+esc(fmtTimeShort(sentTimes[sentTimes.length-1])) : '')+'. Bạn vẫn cập nhật được kết quả từng việc.</div>') + '</div>';
       box.innerHTML = html;
+      var sendBtn = $("sendDayBtn");
+      if (sendBtn) sendBtn.addEventListener("click", function(){ sendDayReport(drafts.map(function(x){ return x.id; })); });
 
       box.querySelectorAll(".tickDone").forEach(function(b){ b.addEventListener("click", function(){ openInlineForm(b.dataset.id, "done"); }); });
       box.querySelectorAll(".tickProgress").forEach(function(b){ b.addEventListener("click", function(){ setStatus(b.dataset.id, "progress", {}); }); });
@@ -929,6 +990,21 @@ const provider = new GoogleAuthProvider();
     } catch(e){
       box.innerHTML = '<div class="empty">Lỗi tải dữ liệu: '+esc(e.message||"")+'</div>';
     }
+  }
+
+  async function sendDayReport(ids){
+    var b = $("sendDayBtn");
+    if (b){ b.disabled = true; b.textContent = "Đang gửi..."; }
+    try {
+      var now = new Date().toISOString();
+      var batch = writeBatch(db);
+      ids.forEach(function(id){ batch.update(doc(db, "reports", id), { draft: false, submittedAt: now, updatedAt: now }); });
+      await batch.commit();
+      showToast("📤 Đã gửi báo cáo ngày " + fmtDateVN(state.reportDate) + " - nhóm Sub sẽ nhận thông báo");
+    } catch(e){
+      showToast("Gửi thất bại: " + (e && e.message ? e.message : ""), true);
+    }
+    refreshMyEntries();
   }
 
   function renderInlineForm(id, r){
@@ -1071,15 +1147,30 @@ const provider = new GoogleAuthProvider();
     box.innerHTML = '<div class="card"><div class="empty">Đang tải dữ liệu...</div></div>';
     var reports = [];
     try {
+      // GDKD xem toàn vùng; người trong Sub xem cả Sub; chưa gán Sub thì chỉ xem của mình
+      var scope = [];
+      if (!state.isAdmin){
+        var sid = mySubId();
+        scope = sid ? [where("subId","==",sid)] : [where("userId","==",state.myId)];
+      }
       if (state.dashMode === "day"){
-        var q = query(collection(db, "reports"), where("date","==",state.dashDate));
+        var q = query.apply(null, [collection(db, "reports")].concat(scope, [where("date","==",state.dashDate)]));
         var snap = await getDocs(q);
         snap.forEach(function(d){ var r = d.data(); r.id = d.id; reports.push(r); });
-      } else {
+      } else if (state.isAdmin){
         var q2 = query(collection(db, "reports"), where("date",">=",state.rangeFrom), where("date","<=",state.rangeTo));
         var snap2 = await getDocs(q2);
         snap2.forEach(function(d){ var r = d.data(); r.id = d.id; reports.push(r); });
+      } else {
+        var days = [], cur = state.rangeFrom;
+        while (cur <= state.rangeTo && days.length < 62){ days.push(cur); cur = addDaysIso(cur, 1); }
+        var snaps = await Promise.all(days.map(function(dd){
+          return getDocs(query.apply(null, [collection(db, "reports")].concat(scope, [where("date","==",dd)])));
+        }));
+        snaps.forEach(function(sn){ sn.forEach(function(d){ var r = d.data(); r.id = d.id; reports.push(r); }); });
       }
+      // Bản nháp (lưu tạm, chưa gửi) không đưa lên Dashboard
+      reports = reports.filter(function(r){ return r.draft !== true; });
     } catch(e){
       box.innerHTML = '<div class="card"><div class="empty">Lỗi tải dữ liệu: '+esc(e.message||"")+'</div></div>';
       return;
@@ -1259,7 +1350,7 @@ const provider = new GoogleAuthProvider();
       bySub[key].items.push(r);
     });
 
-    var html = '<div class="card"><h2>Toàn vùng - '+fmtDateVN(state.dashDate)+'</h2>' + statBlockHtml(overall) + '</div>';
+    var html = '<div class="card"><h2>'+esc(scopeLabel())+' - '+fmtDateVN(state.dashDate)+'</h2>' + statBlockHtml(overall) + '</div>';
     var subKeys = Object.keys(bySub);
     if (!subKeys.length){
       html += '<div class="card"><div class="empty">Chưa có báo cáo nào trong ngày này.</div></div>';
@@ -1280,7 +1371,7 @@ const provider = new GoogleAuthProvider();
           var rows = items.map(function(r){
             var st = STATUS[r.status] || STATUS.pending;
             var numsHtml = resultNumsHtml(r);
-            return '<div class="entry"><div class="top"><b>'+esc(r.categoryName || "")+'</b><span style="display:flex;align-items:center;gap:6px"><span class="badge '+st.cls+'">'+st.label+'</span>'+(r.id?commentBtnHtml(r.id, r):"")+'</span></div>' +
+            return '<div class="entry"><div class="top"><b>'+esc(r.categoryName || "")+'</b><span style="display:flex;align-items:center;gap:6px"><span class="badge '+st.cls+'">'+st.label+'</span>'+(r.id?commentBtnHtml(r.id, r):"")+manageBtnsHtml(r)+'</span></div>' +
               (r.description ? '<div class="meta">Mô tả chi tiết: '+esc(r.description)+'</div>' : "") +
               extrasLineHtml(r, "meta") +
               (r.status === "done" && r.resultDescription ? '<div class="meta">Kết quả: '+esc(r.resultDescription)+'</div>' : "") +
@@ -1298,6 +1389,71 @@ const provider = new GoogleAuthProvider();
       html += '</div>';
     }
     box.innerHTML = html;
+  }
+
+  function scopeLabel(){
+    if (state.isAdmin) return "Toàn vùng";
+    var t = state.team[state.myId];
+    return t ? (t.subName || "Sub của tôi") : "Của tôi";
+  }
+  function manageBtnsHtml(r){
+    if (!r.id || !canManageReport(r)) return "";
+    return '<button type="button" class="mg-btn mgEdit" data-id="'+esc(r.id)+'" title="Sửa">✏️</button>' +
+      '<button type="button" class="mg-btn mgDel" data-id="'+esc(r.id)+'" title="Xoá">🗑</button>';
+  }
+  function findDashReport(id){ return (state.dashReports||[]).find(function(x){ return x.id === id; }); }
+  document.addEventListener("click", function(e){
+    var ed = e.target.closest && e.target.closest(".mgEdit");
+    if (ed){ openEditModal(findDashReport(ed.dataset.id)); return; }
+    var dl = e.target.closest && e.target.closest(".mgDel");
+    if (dl){
+      armConfirm(dl, async function(){
+        try { await deleteDoc(doc(db, "reports", dl.dataset.id)); showToast("Đã xoá đầu việc"); refreshDashboard(); }
+        catch(err){ showToast("Xoá thất bại: " + (err.message||""), true); }
+      }, "Xoá?");
+    }
+  });
+  function ensureEditModal(){
+    if ($("editOverlay")) return;
+    var ov = document.createElement("div");
+    ov.id = "editOverlay";
+    ov.innerHTML = '<div id="editModal"><div class="em-head"><span id="emTitle">Sửa đầu việc</span><button type="button" id="emClose">×</button></div><div id="emBody"></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click", function(e){ if (e.target === ov) ov.classList.remove("open"); });
+    $("emClose").addEventListener("click", function(){ ov.classList.remove("open"); });
+  }
+  function openEditModal(r){
+    if (!r || !canManageReport(r)) return;
+    ensureEditModal();
+    var stOpts = ["pending","progress","done","notdone"].map(function(k){ return '<option value="'+k+'"'+(r.status===k?" selected":"")+'>'+STATUS[k].label+'</option>'; }).join("");
+    $("emTitle").textContent = "Sửa: " + (r.categoryName||"") + " · " + empName(r.userId);
+    $("emBody").innerHTML =
+      '<label>Mô tả chi tiết</label><textarea id="emDesc">'+esc(r.description||"")+'</textarea>' +
+      '<div class="row"><div><label>Với ai</label><input type="text" id="emCus" value="'+esc(r.customer||"")+'"></div>' +
+      '<div><label>Ở đâu</label><input type="text" id="emLoc" value="'+esc(r.location||"")+'"></div></div>' +
+      '<label>Tại sao</label><input type="text" id="emWhy" value="'+esc(r.why||"")+'">' +
+      '<label>Trạng thái</label><select id="emSt">'+stOpts+'</select>' +
+      '<label>Kết quả</label><textarea id="emRes">'+esc(r.resultDescription||"")+'</textarea>' +
+      '<label>Lý do chưa xong</label><input type="text" id="emReason" value="'+esc(r.reasonNotDone||"")+'">' +
+      '<div class="row"><div><label>Sản lượng (tấn)</label><input type="number" id="emSl" value="'+(Number(r.sanLuong)||"")+'"></div>' +
+      '<div><label>Doanh thu (tr)</label><input type="number" id="emDt" value="'+(Number(r.doanhThu)||"")+'"></div>' +
+      '<div><label>Con giống</label><input type="number" id="emCg" value="'+(Number(r.conGiong)||"")+'"></div></div>' +
+      '<button class="btn" id="emSave" style="width:100%;margin-top:12px">Lưu thay đổi</button>';
+    $("editOverlay").classList.add("open");
+    $("emSave").onclick = async function(){
+      var b = $("emSave"); b.disabled = true;
+      try {
+        await updateDoc(doc(db, "reports", r.id), {
+          description: $("emDesc").value.trim(), customer: $("emCus").value.trim(), location: $("emLoc").value.trim(), why: $("emWhy").value.trim(),
+          status: $("emSt").value, resultDescription: $("emRes").value.trim(), reasonNotDone: $("emReason").value.trim(),
+          sanLuong: Number($("emSl").value)||0, doanhThu: Number($("emDt").value)||0, conGiong: Number($("emCg").value)||0,
+          updatedAt: new Date().toISOString(), editedBy: state.myId
+        });
+        $("editOverlay").classList.remove("open");
+        showToast("Đã lưu thay đổi");
+        refreshDashboard();
+      } catch(e){ showToast("Lưu thất bại: " + (e.message||""), true); b.disabled = false; }
+    };
   }
 
   function renderRangeDashboard(reports){
@@ -1510,8 +1666,9 @@ const provider = new GoogleAuthProvider();
     var ids = Object.keys(state.subs);
     if (!ids.length){ box.innerHTML = '<div class="empty">Chưa có Sub nào.</div>'; return; }
     box.innerHTML = '<div class="pill-list">' + ids.map(function(id){
-      return '<span class="pill">'+esc(state.subs[id].name)+' <button data-id="'+esc(id)+'">×</button></span>';
-    }).join("") + '</div>';
+      var leads = Object.keys(state.team).filter(function(u){ return state.team[u].subId === id && state.team[u].isLead; }).map(function(u){ return empName(u); });
+      return '<span class="pill">'+esc(state.subs[id].name)+' <span class="muted">· '+(leads.length ? '👑 '+esc(leads.join(", ")) : '⚠️ chưa có quản lý')+'</span> <button data-id="'+esc(id)+'">×</button></span>';
+    }).join("") + '</div>' + '<div class="muted" style="margin-top:6px">👑 Quản lý Sub được xác định theo tên: người có tên trùng tên Sub (VD: Le Nam → Sub Nam).</div>';
     box.querySelectorAll("button").forEach(function(b){
       b.addEventListener("click", function(){
         armConfirm(b, async function(){
@@ -1592,7 +1749,7 @@ const provider = new GoogleAuthProvider();
       var t = state.team[uid];
       var cur = t ? t.subId : "";
       var status = t
-        ? '<span class="assign-tag ok">✓ '+esc(t.subName||"")+'</span>'
+        ? '<span class="assign-tag ok">✓ '+esc(t.subName||"")+'</span>'+(t.isLead?'<span class="lead-tag">👑 Quản lý</span>':'')
         : '<span class="assign-tag no">Chưa gán Sub</span>';
       return '<div class="search-hit'+(t?" assigned":" unassigned")+'">' +
         '<span>'+esc(p.name || "Không rõ tên")+' '+status+'<br><span class="muted">'+esc(p.email||"")+'</span></span>' +
@@ -1610,8 +1767,9 @@ const provider = new GoogleAuthProvider();
         var subName = state.subs[subId].name;
         b.disabled = true; var oldLabel = b.textContent; b.textContent = "Đang gán...";
         try {
-          await setDoc(doc(db, "team", b.dataset.id), { subId: subId, subName: subName });
-          state.team[b.dataset.id] = { subId: subId, subName: subName };
+          var isLead = isNameLeadOf((state.allUsers[b.dataset.id]||{}).name, subName);
+          await setDoc(doc(db, "team", b.dataset.id), { subId: subId, subName: subName, isLead: isLead });
+          state.team[b.dataset.id] = { subId: subId, subName: subName, isLead: isLead };
           await resyncReportsSub(b.dataset.id, subId, subName);
         } catch(e){
           showToast("Gán thất bại: " + (e && e.message ? e.message : ""), true);
@@ -1651,7 +1809,7 @@ const provider = new GoogleAuthProvider();
     box.innerHTML = uids.map(function(uid){
       var name = empName(uid);
       var t = state.team[uid];
-      return '<div class="search-hit"><span>'+esc(name)+' <span class="muted">('+esc(t.subName)+')</span></span>' +
+      return '<div class="search-hit"><span>'+esc(name)+' <span class="muted">('+esc(t.subName)+')</span>'+(t.isLead?'<span class="lead-tag">👑 Quản lý</span>':'')+'</span>' +
         '<button class="btn small danger" data-id="'+esc(uid)+'">Bỏ gán</button></div>';
     }).join("");
     box.querySelectorAll("button").forEach(function(b){
@@ -1783,8 +1941,15 @@ const provider = new GoogleAuthProvider();
       return '<option value="'+esc(id)+'">'+esc(state.categories[id].name)+'</option>';
     }).join("") || '<option value="">(chưa có danh mục)</option>';
     var userPicker = "";
-    if (state.isAdmin){
-      var uids = Object.keys(state.allUsers).sort(function(a,b){ return empName(a).localeCompare(empName(b)); });
+    var pickable = state.isAdmin ? Object.keys(state.allUsers)
+      : Object.keys(state.team).filter(function(u){ return mySubId() && state.team[u].subId === mySubId(); });
+    if (pickable.indexOf(state.myId) === -1) pickable.push(state.myId);
+    if (!state.isAdmin && pickable.length > 1 && !state._planUsersLoaded){
+      state._planUsersLoaded = true;
+      ensureAllUsers().then(function(){ renderPlanView(); });
+    }
+    if (pickable.length > 1){
+      var uids = pickable.sort(function(a,b){ return empName(a).localeCompare(empName(b)); });
       userPicker = '<label>Xem kế hoạch của</label><select id="plUser">' +
         uids.map(function(u){ return '<option value="'+esc(u)+'"'+(u===state.planUser?" selected":"")+'>'+esc(empName(u))+(u===state.myId?" (tôi)":"")+'</option>'; }).join("") +
         '</select>';
@@ -1822,7 +1987,7 @@ const provider = new GoogleAuthProvider();
     $("plDay").innerHTML = days.map(function(d, i){
       return '<option value="'+d+'"'+(d===today?" selected":"")+'>'+DOW[i]+' '+fmtDateVN(d).slice(0,5)+'</option>';
     }).join("");
-    var canEdit = (uid === state.myId) || state.isAdmin;
+    var canEdit = (uid === state.myId) || state.isAdmin || (amLead() && !!state.team[uid] && state.team[uid].subId === mySubId());
     $("plAddCard").style.display = canEdit ? "" : "none";
     var box = $("plResult");
     box.innerHTML = '<div class="card"><div class="empty">Đang tải...</div></div>';
@@ -1999,10 +2164,10 @@ const provider = new GoogleAuthProvider();
         description: it.goal || ("Theo kế hoạch tuần: " + it.categoryName),
         status: "pending", reasonNotDone: "",
         sanLuong: 0, doanhThu: 0, conGiong: 0, moMoiType: "", moMoiSoLuong: 0, geo: "",
-        planItemId: it.id,
+        planItemId: it.id, draft: true,
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
       });
-      showToast("Đã tạo báo cáo ngày " + fmtDateVN(it.day) + " - vào tab Kế hoạch ngày để cập nhật kết quả");
+      showToast("Đã tạo đầu việc (lưu tạm) ngày " + fmtDateVN(it.day) + " - vào tab Kế hoạch ngày để gửi báo cáo");
       await refreshPlan();
     } catch(e){ showToast("Tạo báo cáo thất bại: " + (e.message||""), true); btn.disabled = false; }
   }
