@@ -195,6 +195,13 @@
   .kpi-bar .kpi-fill { position:absolute; left:0; top:0; bottom:0; background: linear-gradient(90deg, #7cc59b, var(--gf-green)); }
   .kpi-bar span { position: relative; display:block; text-align:center; line-height: 28px; font-size: 12.5px; }
   @media (max-width: 560px){ .chart-grid { grid-template-columns: 1fr; } }
+  /* --- Gán nhân viên vào Sub --- */
+  .assign-sum { font-size: 12.5px; padding: 6px 10px; margin: 8px 0 4px; background: var(--bg); border-radius: 8px; }
+  .search-hit.assigned { background: var(--gf-green-light); border-radius: 8px; padding-left: 8px; padding-right: 8px; }
+  .search-hit.unassigned { background: #fff7e6; border-radius: 8px; padding-left: 8px; padding-right: 8px; }
+  .assign-tag { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; margin-left: 4px; white-space: nowrap; }
+  .assign-tag.ok { background: var(--gf-green); color: #fff; }
+  .assign-tag.no { background: #f5a623; color: #fff; }
 </style>
 </head>
 <body>
@@ -1572,13 +1579,26 @@ const provider = new GoogleAuthProvider();
       return !qn || name.indexOf(qn) !== -1;
     });
     if (!uids.length){ box.innerHTML = q ? '<div class="empty">Không tìm thấy.</div>' : '<div class="empty">Chưa có nhân viên nào đăng nhập app.</div>'; return; }
-    box.innerHTML = uids.map(function(uid){
+    // Người CHƯA gán Sub lên đầu, rồi xếp theo tên
+    uids.sort(function(a,b){
+      var ga = state.team[a] ? 1 : 0, gb = state.team[b] ? 1 : 0;
+      if (ga !== gb) return ga - gb;
+      return (state.allUsers[a].name||"").localeCompare(state.allUsers[b].name||"");
+    });
+    var nAssigned = uids.filter(function(u){ return !!state.team[u]; }).length;
+    box.innerHTML = '<div class="assign-sum">✅ Đã gán: <b>'+nAssigned+'</b> · ⚠️ Chưa gán: <b>'+(uids.length-nAssigned)+'</b></div>' +
+      uids.map(function(uid){
       var p = state.allUsers[uid];
-      return '<div class="search-hit">' +
-        '<span>'+esc(p.name || "Không rõ tên")+' <span class="muted">'+esc(p.email||"")+'</span></span>' +
+      var t = state.team[uid];
+      var cur = t ? t.subId : "";
+      var status = t
+        ? '<span class="assign-tag ok">✓ '+esc(t.subName||"")+'</span>'
+        : '<span class="assign-tag no">Chưa gán Sub</span>';
+      return '<div class="search-hit'+(t?" assigned":" unassigned")+'">' +
+        '<span>'+esc(p.name || "Không rõ tên")+' '+status+'<br><span class="muted">'+esc(p.email||"")+'</span></span>' +
         '<span style="display:flex;gap:6px">' +
-        '<select data-id="'+esc(uid)+'" class="assignSel"><option value="">Chọn Sub</option>'+subOptionsHtml()+'</select>' +
-        '<button class="btn small assignBtn" data-id="'+esc(uid)+'">Gán</button>' +
+        '<select data-id="'+esc(uid)+'" class="assignSel"><option value="">Chọn Sub</option>'+subOptionsHtml(cur)+'</select>' +
+        '<button class="btn small assignBtn'+(t?" secondary":"")+'" data-id="'+esc(uid)+'">'+(t?"Đổi":"Gán")+'</button>' +
         '</span></div>';
     }).join("");
     box.querySelectorAll(".assignBtn").forEach(function(b){
@@ -1586,6 +1606,7 @@ const provider = new GoogleAuthProvider();
         var sel = box.querySelector('.assignSel[data-id="'+b.dataset.id+'"]');
         var subId = sel.value;
         if (!subId){ showToast("Chọn Sub trước khi gán.", true); return; }
+        if (state.team[b.dataset.id] && state.team[b.dataset.id].subId === subId){ showToast("Nhân viên này đã ở Sub này rồi."); return; }
         var subName = state.subs[subId].name;
         b.disabled = true; var oldLabel = b.textContent; b.textContent = "Đang gán...";
         try {
@@ -1597,6 +1618,7 @@ const provider = new GoogleAuthProvider();
         }
         b.disabled = false; b.textContent = oldLabel;
         renderTeamList();
+        doEmpSearch(($("empSearch") && $("empSearch").value) || "");
       });
     });
   }
@@ -1637,6 +1659,7 @@ const provider = new GoogleAuthProvider();
         await deleteDoc(doc(db, "team", b.dataset.id));
         delete state.team[b.dataset.id];
         renderTeamList();
+        if ($("empResults") && $("empResults").innerHTML) doEmpSearch(($("empSearch") && $("empSearch").value) || "");
       });
     });
   }
