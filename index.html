@@ -769,7 +769,7 @@ const provider = new GoogleAuthProvider();
     for (var i = 0; i < uids.length; i++){
       var uid = uids[i], t = state.team[uid], u = state.allUsers[uid] || {};
       var sub = state.subs[t.subId] || {};
-      var lead = isNameLeadOf(u.name, sub.name || t.subName);
+      var lead = (typeof t.leadManual === "boolean") ? t.leadManual : isNameLeadOf(u.name, sub.name || t.subName);
       if (!!t.isLead !== lead){
         await updateDoc(doc(db, "team", uid), { isLead: lead });
         t.isLead = lead;
@@ -1668,7 +1668,7 @@ const provider = new GoogleAuthProvider();
     box.innerHTML = '<div class="pill-list">' + ids.map(function(id){
       var leads = Object.keys(state.team).filter(function(u){ return state.team[u].subId === id && state.team[u].isLead; }).map(function(u){ return empName(u); });
       return '<span class="pill">'+esc(state.subs[id].name)+' <span class="muted">· '+(leads.length ? '👑 '+esc(leads.join(", ")) : '⚠️ chưa có quản lý')+'</span> <button data-id="'+esc(id)+'">×</button></span>';
-    }).join("") + '</div>' + '<div class="muted" style="margin-top:6px">👑 Quản lý Sub được xác định theo tên: người có tên trùng tên Sub (VD: Le Nam → Sub Nam).</div>';
+    }).join("") + '</div>' + '<div class="muted" style="margin-top:6px">👑 Quản lý Sub tự nhận theo tên (VD: Le Nam → Sub Nam). Muốn chỉ định người khác: tìm nhân viên ở mục dưới, bấm nút <b>👑 QL</b>.</div>';
     box.querySelectorAll("button").forEach(function(b){
       b.addEventListener("click", function(){
         armConfirm(b, async function(){
@@ -1756,8 +1756,24 @@ const provider = new GoogleAuthProvider();
         '<span style="display:flex;gap:6px">' +
         '<select data-id="'+esc(uid)+'" class="assignSel"><option value="">Chọn Sub</option>'+subOptionsHtml(cur)+'</select>' +
         '<button class="btn small assignBtn'+(t?" secondary":"")+'" data-id="'+esc(uid)+'">'+(t?"Đổi":"Gán")+'</button>' +
+        (t ? '<button class="btn small secondary leadBtn" data-id="'+esc(uid)+'" title="Chỉ định / bỏ Quản lý Sub">'+(t.isLead?"Bỏ 👑":"👑 QL")+'</button>' : '') +
         '</span></div>';
     }).join("");
+    box.querySelectorAll(".leadBtn").forEach(function(b){
+      b.addEventListener("click", async function(){
+        var uid = b.dataset.id, t = state.team[uid];
+        if (!t) return;
+        var v = !t.isLead;
+        b.disabled = true;
+        try {
+          await updateDoc(doc(db, "team", uid), { isLead: v, leadManual: v });
+          t.isLead = v; t.leadManual = v;
+          showToast((v ? "Đã đặt " : "Đã bỏ ") + ((state.allUsers[uid]||{}).name||"") + (v ? " làm Quản lý " : " khỏi Quản lý ") + (t.subName||""));
+        } catch(e){ showToast("Lỗi: " + (e.message||""), true); }
+        renderSubList(); renderTeamList();
+        doEmpSearch(($("empSearch") && $("empSearch").value) || "");
+      });
+    });
     box.querySelectorAll(".assignBtn").forEach(function(b){
       b.addEventListener("click", async function(){
         var sel = box.querySelector('.assignSel[data-id="'+b.dataset.id+'"]');
