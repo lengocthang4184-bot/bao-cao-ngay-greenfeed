@@ -287,8 +287,9 @@
   </div>
   <nav class="tabs" id="tabs">
     <button data-tab="report" class="active">Kế hoạch ngày</button>
+    <button data-tab="dashboard">Dashboard ngày</button>
     <button data-tab="plan">Kế hoạch tuần</button>
-    <button data-tab="dashboard">Dashboard</button>
+    <button data-tab="planDash">Dashboard tuần</button>
     <button data-tab="comply">Tuân thủ</button>
     <button data-tab="admin" id="adminTabBtn" style="display:none">Quản trị</button>
   </nav>
@@ -298,6 +299,7 @@
   <div id="view-report"></div>
   <div id="view-plan" style="display:none"></div>
   <div id="view-dashboard" style="display:none"></div>
+  <div id="view-planDash" style="display:none"></div>
   <div id="view-comply" style="display:none"></div>
   <div id="view-admin" style="display:none"></div>
 </main>
@@ -763,10 +765,12 @@ const provider = new GoogleAuthProvider();
         $("view-dashboard").style.display = state.currentTab === "dashboard" ? "" : "none";
         $("view-admin").style.display = state.currentTab === "admin" ? "" : "none";
         $("view-comply").style.display = state.currentTab === "comply" ? "" : "none";
+        $("view-planDash").style.display = state.currentTab === "planDash" ? "" : "none";
         if (state.currentTab === "comply") renderComplyView();
         if (state.currentTab === "dashboard") refreshDashboard();
         if (state.currentTab === "report") refreshMyEntries();
         if (state.currentTab === "plan") refreshPlan();
+        if (state.currentTab === "planDash") renderPlanDashView();
       };
     });
   }
@@ -1205,11 +1209,11 @@ const provider = new GoogleAuthProvider();
         '<textarea class="fResult" placeholder="VD: đã chốt đơn 2 tấn, khách đồng ý dùng thử...">'+esc(r.resultDescription||"")+'</textarea>' +
         '<div class="row">' +
           '<div><label>Nhóm thức ăn</label><select class="fSlType">'+typeOptionsHtml(state.slTypes, r.slType)+'</select></div>' +
-          '<div><label>Sản lượng (tấn)</label><input type="number" step="1" class="fSl" placeholder="0" value="'+ (r.sanLuong||"") +'"></div>' +
+          '<div><label>Sản lượng TACN (tấn)</label><input type="number" step="1" class="fSl" placeholder="0" value="'+ (r.sanLuong||"") +'"></div>' +
         '</div>' +
         '<div class="row">' +
           '<div><label>Nhóm doanh số</label><select class="fDtType">'+typeOptionsHtml(state.dtTypes, r.dtType)+'</select></div>' +
-          '<div><label>Doanh thu (triệu đồng)</label><input type="number" step="1" class="fDt" placeholder="0" value="'+ (r.doanhThu||"") +'"></div>' +
+          '<div><label>Doanh số (triệu đồng)</label><input type="number" step="1" class="fDt" placeholder="0" value="'+ (r.doanhThu||"") +'"></div>' +
         '</div>' +
         '<div class="row">' +
           '<div><label>Nhóm con giống</label><select class="fCgType">'+typeOptionsHtml(state.cgTypes, r.cgType)+'</select></div>' +
@@ -1411,9 +1415,9 @@ const provider = new GoogleAuthProvider();
         "Mục tiêu": r.why || "",
         "Mô tả chi tiết": r.description || "",
         "Kết quả": r.resultDescription || "",
-        "Sản lượng (tấn)": r.sanLuong || 0,
+        "Sản lượng TACN (tấn)": r.sanLuong || 0,
         "Loại sản lượng": r.slType || "",
-        "Doanh thu (tr)": r.doanhThu || 0,
+        "Doanh số (tr)": r.doanhThu || 0,
         "Loại doanh thu": r.dtType || "",
         "Con giống (con)": r.conGiong || 0,
         "Loại con giống": r.cgType || "",
@@ -1471,8 +1475,8 @@ const provider = new GoogleAuthProvider();
       '</div>' +
       '<h3 style="margin:14px 0 8px">Kết quả công việc</h3>' +
       '<div class="metric-grid">' +
-        '<div class="metric" data-f="sanLuong"'+sc+'><div class="num">'+fmtNum(s.sanLuong)+'</div><div class="label">Sản lượng (tấn)</div></div>' +
-        '<div class="metric" data-f="doanhThu"'+sc+'><div class="num">'+fmtNum(s.doanhThu)+'</div><div class="label">Doanh thu (tr)</div></div>' +
+        '<div class="metric" data-f="sanLuong"'+sc+'><div class="num">'+fmtNum(s.sanLuong)+'</div><div class="label">Sản lượng TACN (tấn)</div></div>' +
+        '<div class="metric" data-f="doanhThu"'+sc+'><div class="num">'+fmtNum(s.doanhThu)+'</div><div class="label">Doanh số (tr)</div></div>' +
         '<div class="metric" data-f="conGiong"'+sc+'><div class="num">'+fmtNum(s.conGiong)+' con</div><div class="label">Con giống</div></div>' +
       '</div>' +
       (s.moMoiCount ? '<div class="metric-grid" style="margin-top:8px">' +
@@ -1744,8 +1748,8 @@ const provider = new GoogleAuthProvider();
       '<label>Trạng thái</label><select id="emSt">'+stOpts+'</select>' +
       '<label>Kết quả</label><textarea id="emRes">'+esc(r.resultDescription||"")+'</textarea>' +
       '<label>Lý do chưa xong</label><input type="text" id="emReason" value="'+esc(r.reasonNotDone||"")+'">' +
-      '<div class="row"><div><label>Sản lượng (tấn)</label><input type="number" id="emSl" value="'+(Number(r.sanLuong)||"")+'"></div>' +
-      '<div><label>Doanh thu (tr)</label><input type="number" id="emDt" value="'+(Number(r.doanhThu)||"")+'"></div>' +
+      '<div class="row"><div><label>Sản lượng TACN (tấn)</label><input type="number" id="emSl" value="'+(Number(r.sanLuong)||"")+'"></div>' +
+      '<div><label>Doanh số (tr)</label><input type="number" id="emDt" value="'+(Number(r.doanhThu)||"")+'"></div>' +
       '<div><label>Con giống</label><input type="number" id="emCg" value="'+(Number(r.conGiong)||"")+'"></div></div>' +
       '<button class="btn" id="emSave" style="width:100%;margin-top:12px">Lưu thay đổi</button>';
     $("editOverlay").classList.add("open");
@@ -2292,8 +2296,8 @@ const provider = new GoogleAuthProvider();
         '<h2>1-2-3. Kết quả tuần trước, Mục tiêu tuần này & Phối hợp</h2>' +
         '<div class="muted">Tuần đầu dùng app: anh/chị tự điền tay. Chỉ tính KH <b>mở mới qua đại lý</b>, <b>đại lý/trại lấy trực tiếp công ty</b>, hoặc <b>đã chuyển đổi 100%</b>. KH đang chuyển đổi (chưa 100%) chỉ ghi số lượng theo dõi, không cộng vào tổng.</div>' +
         '<b style="display:block;margin-top:8px">Kết quả tuần trước</b>' +
-        '<div class="row"><div><label>Sản lượng cám (tấn)</label><input type="number" id="sumSlPrev" step="0.1"></div>' +
-        '<div><label>Doanh thu SPTY (triệu)</label><input type="number" id="sumDtPrev" step="0.1"></div></div>' +
+        '<div class="row"><div><label>Sản lượng TACN (tấn)</label><input type="number" id="sumSlPrev" step="0.1"></div>' +
+        '<div><label>Doanh số SPTY (triệu)</label><input type="number" id="sumDtPrev" step="0.1"></div></div>' +
         '<label style="margin-top:6px">Con giống — theo loại</label>' +
         '<div id="cgRowsBox"></div>' +
         '<button class="btn secondary small" id="addCgRowBtn" type="button">+ Thêm loại con giống</button>' +
@@ -2302,8 +2306,8 @@ const provider = new GoogleAuthProvider();
         '<button class="btn secondary small" id="addMmRowBtn" type="button">+ Thêm dòng mở mới/chuyển đổi</button>' +
         '<div class="muted" id="sumTotalsMsg" style="margin-top:6px"></div>' +
         '<b style="display:block;margin-top:12px">Mục tiêu tuần này</b>' +
-        '<div class="row"><div><label>Sản lượng cám (tấn)</label><input type="number" id="sumSlTarget" step="0.1"></div>' +
-        '<div><label>Doanh thu SPTY (triệu)</label><input type="number" id="sumDtTarget" step="0.1"></div></div>' +
+        '<div class="row"><div><label>Sản lượng TACN (tấn)</label><input type="number" id="sumSlTarget" step="0.1"></div>' +
+        '<div><label>Doanh số SPTY (triệu)</label><input type="number" id="sumDtTarget" step="0.1"></div></div>' +
         '<div class="row"><div><label>Con giống (con)</label><input type="number" id="sumCgTarget"></div>' +
         '<div><label>Mở mới/chuyển đổi (KH)</label><input type="number" id="sumMmTarget"></div></div>' +
         '<b style="display:block;margin-top:12px">3. Phối hợp cấp trên / Kỹ thuật heo / Kỹ thuật gia cầm</b>' +
@@ -2328,8 +2332,10 @@ const provider = new GoogleAuthProvider();
         '<div class="row"><div><label>Ngày</label><select id="plDay"></select></div>' +
         '<div><label>Loại đầu việc</label><select id="plCat">'+catOptions+'</select></div></div>' +
         '<label>Với ai <span class="tag">(tùy chọn)</span></label><input type="text" id="plCustomer" placeholder="Tên trại, khách hàng...">' +
-        '<label>Ở đâu <span class="tag">(tùy chọn)</span></label><input type="text" id="plLocation" placeholder="Xã/phường, tỉnh...">' +
-        '<label>Mục tiêu</label><input type="text" id="plGoal" placeholder="VD: Chốt đơn 5 tấn cám heo">' +
+        '<label>Ở đâu <span class="tag">(tùy chọn)</span></label>' +
+        '<div class="geo-row"><div><select id="plTinh"><option value="">-- Tỉnh --</option>'+tinhOptionsHtml()+'</select></div>' +
+        '<div><input type="text" id="plXa" list="plXaList" placeholder="Gõ để tìm xã/phường..." autocomplete="off"><datalist id="plXaList"></datalist></div></div>' +
+        '<label>Mục tiêu</label><input type="text" id="plGoal" placeholder="VD: Chốt đơn 5 tấn TACN heo">' +
         '<button class="btn" id="plAddBtn" style="margin-top:10px;width:100%">Thêm vào kế hoạch</button>' +
       '</div>' +
       '<div id="plResult"><div class="card"><div class="empty">Đang tải...</div></div></div>';
@@ -2337,6 +2343,10 @@ const provider = new GoogleAuthProvider();
     $("plNext").onclick = function(){ state.planWeek = addDaysIso(state.planWeek, 7); refreshPlan(); };
     $("plThisWeek").onclick = function(){ state.planWeek = mondayOf(todayStr()); refreshPlan(); };
     if ($("plUser")) $("plUser").onchange = function(e){ state.planUser = e.target.value; refreshPlan(); };
+    $("plTinh").addEventListener("change", function(){
+      $("plXaList").innerHTML = xaDatalistHtml($("plTinh").value);
+      $("plXa").value = "";
+    });
     $("plAddBtn").onclick = addPlanItem;
     $("sumSaveBtn").onclick = savePlanSummary;
     $("addCgRowBtn").onclick = function(){ syncCgRows(); state.sumCgRows.push({type:"",qty:0}); renderCgRows(); };
@@ -2357,20 +2367,21 @@ const provider = new GoogleAuthProvider();
       '<div><label>Trạng thái</label><select class="mmRowStatus">' +
         '<option value="full"'+(row.status==="full"?" selected":"")+'>Mở mới / Đã chuyển đổi 100% (cộng số)</option>' +
         '<option value="partial"'+(row.status==="partial"?" selected":"")+'>Đang chuyển đổi, chưa 100% (không cộng số)</option>' +
-      '</select></div></div>' +
-      '<label>Số lượng (KH)</label><input type="number" class="mmRowQty" value="'+(row.qty||"")+'">' +
+      '</select></div>' +
+      '<div><label>Số lượng (KH)</label><input type="number" class="mmRowQty" value="'+(row.qty||"")+'"></div>' +
+      '</div>' +
       '<button class="btn secondary small mmRowDel" data-i="'+i+'" type="button" style="margin:4px 0 10px">Xóa dòng</button>';
   }
   function renderCgRows(){
     $("cgRowsBox").innerHTML = (state.sumCgRows||[]).map(cgRowHtml).join("");
     $("cgRowsBox").querySelectorAll(".cgRowDel").forEach(function(b){
-      b.onclick = function(){ state.sumCgRows.splice(Number(b.dataset.i),1); syncCgRows(); renderCgRows(); };
+      b.onclick = function(){ syncCgRows(); state.sumCgRows.splice(Number(b.dataset.i),1); renderCgRows(); };
     });
   }
   function renderMmRows(){
     $("mmRowsBox").innerHTML = (state.sumMmRows||[]).map(mmRowHtml).join("");
     $("mmRowsBox").querySelectorAll(".mmRowDel").forEach(function(b){
-      b.onclick = function(){ state.sumMmRows.splice(Number(b.dataset.i),1); syncMmRows(); renderMmRows(); };
+      b.onclick = function(){ syncMmRows(); state.sumMmRows.splice(Number(b.dataset.i),1); renderMmRows(); };
     });
   }
   function syncCgRows(){
@@ -2588,17 +2599,19 @@ const provider = new GoogleAuthProvider();
   async function addPlanItem(){
     var catId = $("plCat").value;
     if (!catId){ showToast("Vui lòng chọn loại đầu việc.", true); return; }
+    var tinh = $("plTinh").value, xa = $("plXa").value;
+    var where = (xa && tinh) ? (xa + ", " + tinh) : (xa || tinh || "");
     var it = {
       id: "p" + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
       day: $("plDay").value, catId: catId, categoryName: (state.categories[catId]||{}).name || "",
-      customer: $("plCustomer").value.trim(), location: $("plLocation").value.trim(), goal: $("plGoal").value.trim(),
+      customer: $("plCustomer").value.trim(), location: where, goal: $("plGoal").value.trim(),
       createdAt: new Date().toISOString()
     };
     var btn = $("plAddBtn"); btn.disabled = true;
     try {
       var items = ((state.planData && state.planData.items) || []).concat([it]);
       await savePlanItems(items);
-      $("plCustomer").value = ""; $("plLocation").value = ""; $("plGoal").value = "";
+      $("plCustomer").value = ""; $("plTinh").value = ""; $("plXa").value = ""; $("plXaList").innerHTML = ""; $("plGoal").value = "";
       showToast("Đã thêm vào kế hoạch");
       await refreshPlan();
     } catch(e){ showToast("Lưu kế hoạch thất bại: " + (e.message||""), true); }
@@ -2658,7 +2671,7 @@ const provider = new GoogleAuthProvider();
         '<div class="chart-cell"><div class="chart-title">Tiến độ theo Sub</div><div class="chart-box"><canvas id="chSub"></canvas></div></div>' +
         '<div class="chart-cell"><div class="chart-title">Theo nhân viên (top 10)</div><div class="chart-box tall"><canvas id="chEmp"></canvas></div></div>' +
         '<div class="chart-cell"><div class="chart-title">Theo loại đầu việc</div><div class="chart-box tall"><canvas id="chCat"></canvas></div></div>' +
-        (isRange ? '<div class="chart-cell wide"><div class="chart-title">Sản lượng & doanh thu theo ngày</div><div class="chart-box"><canvas id="chSales"></canvas></div></div>' : '') +
+        (isRange ? '<div class="chart-cell wide"><div class="chart-title">Sản lượng TACN & doanh số theo ngày</div><div class="chart-box"><canvas id="chSales"></canvas></div></div>' : '') +
       '</div></div>';
     var first = box.firstElementChild;
     if (first) first.insertAdjacentHTML("afterend", html); else box.insertAdjacentHTML("beforeend", html);
@@ -2707,8 +2720,8 @@ const provider = new GoogleAuthProvider();
       charts.push(new Chart($("chSales"), {
         type: "line",
         data: { labels: dates.map(function(d){ return fmtDateVN(d).slice(0,5); }), datasets: [
-          { label: "Sản lượng (tấn)", data: dates.map(function(d){ return sl[d]||0; }), borderColor: "#00843D", backgroundColor: "rgba(0,132,61,.12)", fill: true, tension: .3, yAxisID: "y" },
-          { label: "Doanh thu (tr)", data: dates.map(function(d){ return dt[d]||0; }), borderColor: "#0072ce", backgroundColor: "#0072ce", tension: .3, yAxisID: "y1" }
+          { label: "Sản lượng TACN (tấn)", data: dates.map(function(d){ return sl[d]||0; }), borderColor: "#00843D", backgroundColor: "rgba(0,132,61,.12)", fill: true, tension: .3, yAxisID: "y" },
+          { label: "Doanh số (tr)", data: dates.map(function(d){ return dt[d]||0; }), borderColor: "#0072ce", backgroundColor: "#0072ce", tension: .3, yAxisID: "y1" }
         ]},
         options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
           scales: { y: { beginAtZero: true, position: "left", title: { display: true, text: "tấn" } },
@@ -2901,6 +2914,75 @@ const provider = new GoogleAuthProvider();
 
   // ================= TAB TUÂN THỦ: ĐÚNG GIỜ / TRỄ / CHƯA GỬI, PHẠT, ĐÁNH GIÁ, SUB ĐỌC BÁO CÁO =================
   function monthEnd(m){ var d = new Date(Number(m.slice(0,4)), Number(m.slice(5,7)), 0); return ymd(d); }
+  // ================= DASHBOARD KẾ HOẠCH TUẦN (phân quyền như Dashboard ngày) =================
+  function renderPlanDashView(){
+    if (!state.pdWeek) state.pdWeek = mondayOf(todayStr());
+    $("view-planDash").innerHTML =
+      '<div class="card">' +
+        '<h2>📊 Dashboard kế hoạch tuần</h2>' +
+        '<div class="week-nav"><button class="btn secondary small" id="pdPrev">◀</button><b id="pdWeekLabel"></b><button class="btn secondary small" id="pdNext">▶</button></div>' +
+        '<button class="btn secondary small" id="pdThisWeek" style="width:100%">Về tuần này</button>' +
+      '</div>' +
+      '<div id="pdResult"><div class="card"><div class="empty">Đang tải...</div></div></div>';
+    $("pdPrev").onclick = function(){ state.pdWeek = addDaysIso(state.pdWeek, -7); refreshPlanDash(); };
+    $("pdNext").onclick = function(){ state.pdWeek = addDaysIso(state.pdWeek, 7); refreshPlanDash(); };
+    $("pdThisWeek").onclick = function(){ state.pdWeek = mondayOf(todayStr()); refreshPlanDash(); };
+    refreshPlanDash();
+  }
+
+  async function refreshPlanDash(){
+    var ws = state.pdWeek, box = $("pdResult");
+    $("pdWeekLabel").textContent = "Tuần " + fmtDateVN(ws).slice(0,5) + " – " + fmtDateVN(addDaysIso(ws,6)).slice(0,5);
+    box.innerHTML = '<div class="card"><div class="empty">Đang tải...</div></div>';
+    await ensureAllUsers();
+    var plans;
+    try { plans = await cpLoad("weekPlans", ws, ws, "weekStart"); }
+    catch(e){ box.innerHTML = '<div class="card"><div class="empty">Lỗi tải: '+esc(e.message||"")+'</div></div>'; return; }
+    var members = scopeMembers();
+    var deadline = weekDeadlineMs(ws);
+    var rows = members.map(function(u){
+      var p = plans[planDocId(u, ws)] || null;
+      var t = p ? tsMs(p.firstSubmittedAt) : 0;
+      var sent = !!t, late = sent && t > deadline;
+      var pw = (p && p.prevWeek) || {}, tg = (p && p.target) || {};
+      return { uid: u, name: empName(u), sub: (state.team[u]||{}).subName||"", p: p, sent: sent, late: late, pw: pw, tg: tg, tasks: ((p && p.topTasks) || []).length };
+    }).sort(function(a,b){ return a.sub === b.sub ? a.name.localeCompare(b.name) : a.sub.localeCompare(b.sub); });
+    state.pdRows = rows;
+    var sentCount = rows.filter(function(r){ return r.sent; }).length;
+    var slTarget = rows.reduce(function(x,r){ return x+(Number(r.tg.sl)||0); },0);
+    var dtTarget = rows.reduce(function(x,r){ return x+(Number(r.tg.dt)||0); },0);
+    var slPrev = rows.reduce(function(x,r){ return x+(Number(r.pw.sl)||0); },0);
+    var dtPrev = rows.reduce(function(x,r){ return x+(Number(r.pw.dt)||0); },0);
+    var html = '<div class="card"><div class="stat-grid">' +
+      '<div class="stat"><div class="num">'+sentCount+'/'+rows.length+'</div><div class="label">Đã gửi</div></div>' +
+      '<div class="stat"><div class="num">'+fmtNum(slTarget)+'</div><div class="label">Mục tiêu SL TACN (tấn)</div></div>' +
+      '<div class="stat"><div class="num">'+fmtNum(dtTarget)+'</div><div class="label">Mục tiêu Doanh số (tr)</div></div></div>' +
+      '<div class="muted" style="margin-top:6px">Tuần trước (mục 1, người đã điền): SL '+fmtNum(slPrev)+' tấn · Doanh số '+fmtNum(dtPrev)+' tr</div></div>';
+    var bySub = {};
+    rows.forEach(function(r){ (bySub[r.sub||"(chưa gán Sub)"] = bySub[r.sub||"(chưa gán Sub)"] || []).push(r); });
+    Object.keys(bySub).sort().forEach(function(subName){
+      html += '<div class="card"><h3 style="margin:0 0 8px">'+esc(subName)+'</h3>' +
+        '<table class="cp-table"><thead><tr><th>Nhân viên</th><th>Trạng thái</th><th>SL mục tiêu/trước</th><th>DS mục tiêu/trước</th><th>Trọng tâm</th><th></th></tr></thead><tbody>' +
+        bySub[subName].map(function(r){
+          var stChip = !r.sent ? '<span class="chip bad">Chưa gửi</span>' :
+            (r.late ? '<span class="chip warn">Trễ '+esc(fmtMs(tsMs(r.p.firstSubmittedAt)).slice(0,5))+'</span>' : '<span class="chip ok">Đúng giờ</span>') +
+            (r.p && r.p.status === "approved" ? ' <span class="chip ok">✅</span>' : r.p && r.p.status === "returned" ? ' <span class="chip warn">↩️</span>' : '');
+          return '<tr><td class="nm">'+esc(r.name)+'</td><td>'+stChip+'</td>' +
+            '<td>'+fmtNum(r.tg.sl||0)+' / '+fmtNum(r.pw.sl||0)+'</td>' +
+            '<td>'+fmtNum(r.tg.dt||0)+' / '+fmtNum(r.pw.dt||0)+'</td>' +
+            '<td>'+r.tasks+'/3</td>' +
+            '<td><button class="btn secondary small pdGo" data-uid="'+esc(r.uid)+'">Xem →</button></td></tr>';
+        }).join("") + '</tbody></table></div>';
+    });
+    box.innerHTML = html;
+    box.querySelectorAll(".pdGo").forEach(function(b){
+      b.onclick = function(){
+        state.planUser = b.dataset.uid; state.planWeek = ws;
+        document.querySelector('[data-tab="plan"]').click();
+      };
+    });
+  }
+
   function renderComplyView(){
     if (!state.cpMonth){ var cm = todayStr().slice(0,7); state.cpMonth = cm < COMPLY_START.slice(0,7) ? COMPLY_START.slice(0,7) : cm; }
     var scope = state.isAdmin ? "Toàn vùng" : amLead() ? "Sub của tôi" : "Của tôi";
@@ -3149,8 +3231,8 @@ const provider = new GoogleAuthProvider();
     progress: { t: "Đang tiến hành", f: function(r){ return ["done","notdone","pending"].indexOf(r.status) === -1; } },
     notdone: { t: "Chưa hoàn thành", f: function(r){ return r.status === "notdone"; } },
     pending: { t: "Chưa cập nhật", f: function(r){ return r.status === "pending"; } },
-    sanLuong: { t: "Sản lượng (tấn)", f: function(r){ return Number(r.sanLuong) > 0; }, v: function(r){ return fmtNum(r.sanLuong)+" tấn"+(r.slType?" · "+r.slType:""); } },
-    doanhThu: { t: "Doanh thu (tr)", f: function(r){ return Number(r.doanhThu) > 0; }, v: function(r){ return fmtNum(r.doanhThu)+" tr"+(r.dtType?" · "+r.dtType:""); } },
+    sanLuong: { t: "Sản lượng TACN (tấn)", f: function(r){ return Number(r.sanLuong) > 0; }, v: function(r){ return fmtNum(r.sanLuong)+" tấn"+(r.slType?" · "+r.slType:""); } },
+    doanhThu: { t: "Doanh số (tr)", f: function(r){ return Number(r.doanhThu) > 0; }, v: function(r){ return fmtNum(r.doanhThu)+" tr"+(r.dtType?" · "+r.dtType:""); } },
     conGiong: { t: "Con giống", f: function(r){ return Number(r.conGiong) > 0; }, v: function(r){ return fmtNum(r.conGiong)+" con"+(r.cgType?" · "+r.cgType:""); } },
     moMoi: { t: "Mở mới", f: function(r){ return !!r.moMoiType; }, v: function(r){ return (r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+" KH · ":"")+r.moMoiType; } }
   };
