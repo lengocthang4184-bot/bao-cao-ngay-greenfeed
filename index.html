@@ -963,7 +963,8 @@ const provider = new GoogleAuthProvider();
       var q = query(collection(db, "reports"), where("userId","==",state.myId), where("date","==",state.reportDate));
       var snap = await getDocs(q);
       if (snap.empty){
-        box.innerHTML = '<div class="empty">Chưa có đầu việc nào trong ngày này.</div><div id="daySubmitBox"></div>';
+        var secLabel0 = state.reportDate <= todayStr() ? "Kết quả ngày " : "Kế hoạch ngày ";
+        box.innerHTML = '<h3 style="margin:4px 0 8px">'+esc(secLabel0 + fmtDateVN(state.reportDate).slice(0,5))+'</h3><div class="empty">Chưa có đầu việc nào trong ngày này.</div><div id="daySubmitBox"></div>';
         if (bannerBox) bannerBox.innerHTML = "";
         renderDaySubmitBox([]);
         return;
@@ -984,7 +985,8 @@ const provider = new GoogleAuthProvider();
         }
       }
 
-      var html = '<div class="table-wrap"><table class="entries-table"><thead><tr>' +
+      var secLabel = (state.reportDate <= todayStr() ? "Kết quả ngày " : "Kế hoạch ngày ") + fmtDateVN(state.reportDate).slice(0,5);
+      var html = '<h3 style="margin:4px 0 8px">'+esc(secLabel)+'</h3><div class="table-wrap"><table class="entries-table"><thead><tr>' +
         '<th class="stt">#</th><th>Nội dung</th><th>Kết quả</th>' +
         '</tr></thead><tbody>';
       docs.forEach(function(item, idx){
@@ -1418,7 +1420,7 @@ const provider = new GoogleAuthProvider();
         "Sản lượng TACN (tấn)": r.sanLuong || 0,
         "Loại sản lượng": r.slType || "",
         "Doanh số (tr)": r.doanhThu || 0,
-        "Loại doanh thu": r.dtType || "",
+        "Loại doanh số": r.dtType || "",
         "Con giống (con)": r.conGiong || 0,
         "Loại con giống": r.cgType || "",
         "Loại mở mới": r.moMoiType || "",
@@ -1539,7 +1541,7 @@ const provider = new GoogleAuthProvider();
     if (r.status !== "done") return "";
     var parts = [];
     if (r.sanLuong) parts.push("SL: "+fmtNum(r.sanLuong)+" tấn"+(r.slType?" ("+esc(r.slType)+")":""));
-    if (r.doanhThu) parts.push("DT: "+fmtNum(r.doanhThu)+" tr"+(r.dtType?" ("+esc(r.dtType)+")":""));
+    if (r.doanhThu) parts.push("DS: "+fmtNum(r.doanhThu)+" tr"+(r.dtType?" ("+esc(r.dtType)+")":""));
     if (r.conGiong) parts.push("Con giống: "+fmtNum(r.conGiong)+" con"+(r.cgType?" ("+esc(r.cgType)+")":""));
     if (r.moMoiType) parts.push("Mở mới: "+(r.moMoiSoLuong?fmtNum(r.moMoiSoLuong)+" KH ":"")+"("+esc(r.moMoiType)+")");
     if (r.geo) parts.push('<a href="https://maps.google.com/?q='+encodeURIComponent(r.geo)+'" target="_blank" rel="noopener">📍 Bản đồ</a>');
@@ -1550,6 +1552,7 @@ const provider = new GoogleAuthProvider();
   function scopeMembers(){
     return Object.keys(state.team).filter(function(u){
       if (state.isAdmin) return true;
+      if (u === state.myId) return true;
       return mySubId() && state.team[u].subId === mySubId();
     });
   }
@@ -2255,6 +2258,13 @@ const provider = new GoogleAuthProvider();
   function mondayOf(iso){ var d = new Date(iso+"T00:00:00"); d.setDate(d.getDate() - ((d.getDay()+6)%7)); return ymd(d); }
   function weekDays(ws){ var a = []; for (var i=0;i<7;i++) a.push(addDaysIso(ws, i)); return a; }
   function planDocId(uid, ws){ return uid + "_" + ws; }
+  function isoWeekNum(iso){
+    var d = new Date(iso + "T00:00:00Z");
+    var day = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - day + 3);
+    var firstThu = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+    return 1 + Math.round((d - firstThu) / (7*24*3600*1000));
+  }
   function normTxt(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\u0111/g,"d").replace(/\s+/g," ").trim(); }
   async function ensureAllUsers(){
     if (Object.keys(state.allUsers).length) return;
@@ -2293,9 +2303,9 @@ const provider = new GoogleAuthProvider();
         userPicker +
       '</div>' +
       '<div class="card" id="plSumCard">' +
-        '<h2>1-2-3. Kết quả tuần trước, Mục tiêu tuần này & Phối hợp</h2>' +
+        
         '<div class="muted">Tuần đầu dùng app: anh/chị tự điền tay. Chỉ tính KH <b>mở mới qua đại lý</b>, <b>đại lý/trại lấy trực tiếp công ty</b>, hoặc <b>đã chuyển đổi 100%</b>. KH đang chuyển đổi (chưa 100%) chỉ ghi số lượng theo dõi, không cộng vào tổng.</div>' +
-        '<b style="display:block;margin-top:8px">Kết quả tuần trước</b>' +
+        '<h2 style="margin-top:0">1. Kết quả tuần <span id="sumPrevLabel"></span></h2>' +
         '<div class="row"><div><label>Sản lượng TACN (tấn)</label><input type="number" id="sumSlPrev" step="0.1"></div>' +
         '<div><label>Doanh số SPTY (triệu)</label><input type="number" id="sumDtPrev" step="0.1"></div></div>' +
         '<label style="margin-top:6px">Con giống — theo loại</label>' +
@@ -2305,12 +2315,12 @@ const provider = new GoogleAuthProvider();
         '<div id="mmRowsBox"></div>' +
         '<button class="btn secondary small" id="addMmRowBtn" type="button">+ Thêm dòng mở mới/chuyển đổi</button>' +
         '<div class="muted" id="sumTotalsMsg" style="margin-top:6px"></div>' +
-        '<b style="display:block;margin-top:12px">Mục tiêu tuần này</b>' +
+        '<h2 style="margin-top:16px">2. Mục tiêu tuần <span id="sumTargetLabel"></span></h2>' +
         '<div class="row"><div><label>Sản lượng TACN (tấn)</label><input type="number" id="sumSlTarget" step="0.1"></div>' +
         '<div><label>Doanh số SPTY (triệu)</label><input type="number" id="sumDtTarget" step="0.1"></div></div>' +
         '<div class="row"><div><label>Con giống (con)</label><input type="number" id="sumCgTarget"></div>' +
         '<div><label>Mở mới/chuyển đổi (KH)</label><input type="number" id="sumMmTarget"></div></div>' +
-        '<b style="display:block;margin-top:12px">3. Phối hợp cấp trên / Kỹ thuật heo / Kỹ thuật gia cầm</b>' +
+        '<h2 style="margin-top:16px">3. Phối hợp cấp trên / Kỹ thuật heo / Kỹ thuật gia cầm</h2>' +
         '<textarea id="sumSupport" rows="2" placeholder="Việc cần Sub, GDKD, hoặc AE kỹ thuật hỗ trợ..."></textarea>' +
         '<button class="btn" id="sumSaveBtn" style="margin-top:10px;width:100%">Lưu mục 1-2-5</button>' +
         '<div id="sumSaveMsg" class="muted" style="margin-top:6px"></div>' +
@@ -2408,6 +2418,7 @@ const provider = new GoogleAuthProvider();
     $("topTaskMsg").textContent = "Đang lưu...";
     try {
       await setDoc(doc(db, "weekPlans", planDocId(uid, ws)), { topTasks: tasks, userId: uid }, { merge: true });
+      state.planData = Object.assign({}, state.planData, { topTasks: tasks });
       $("topTaskMsg").textContent = "✅ Đã lưu " + tasks.length + " việc trọng tâm";
     } catch(e){ $("topTaskMsg").textContent = "❌ Lỗi: " + (e.message || ""); }
   }
@@ -2428,19 +2439,25 @@ const provider = new GoogleAuthProvider();
     $("sumSaveMsg").textContent = "Đang lưu...";
     try {
       await setDoc(doc(db, "weekPlans", planDocId(uid, ws)), data, { merge: true });
+      state.planData = Object.assign({}, state.planData, { prevWeek: data.prevWeek, target: data.target, support: data.support });
       $("sumSaveMsg").textContent = "✅ Đã lưu (Con giống: "+fmtNum(cgTotal)+" · Mở mới/chuyển đổi tính: "+fmtNum(mmTotal)+" · đang chuyển đổi (chưa cộng): "+fmtNum(mmPartial)+")";
     } catch(e){ $("sumSaveMsg").textContent = "❌ Lỗi: " + (e.message || ""); }
   }
 
   async function refreshPlan(){
     var ws = state.planWeek, days = weekDays(ws), uid = state.planUser || state.myId;
-    $("plWeekLabel").textContent = "Tuần " + fmtDateVN(days[0]).slice(0,5) + " – " + fmtDateVN(days[6]);
+    $("plWeekLabel").textContent = "Tuần " + isoWeekNum(ws) + " (" + fmtDateVN(days[0]).slice(0,5) + " – " + fmtDateVN(days[6]) + ")";
+    var wsPrev = addDaysIso(ws, -7);
+    $("sumPrevLabel").textContent = "Tuần " + isoWeekNum(wsPrev) + " (" + fmtDateVN(wsPrev).slice(0,5) + "–" + fmtDateVN(addDaysIso(wsPrev,6)).slice(0,5) + ")";
+    $("sumTargetLabel").textContent = "Tuần " + isoWeekNum(ws) + " (" + fmtDateVN(ws).slice(0,5) + "–" + fmtDateVN(addDaysIso(ws,6)).slice(0,5) + ")";
+    document.querySelectorAll(".topTaskDeadline").forEach(function(el){ el.min = ws; el.max = addDaysIso(ws,6); });
     var today = todayStr();
     $("plDay").innerHTML = days.map(function(d, i){
       return '<option value="'+d+'"'+(d===today?" selected":"")+'>'+DOW[i]+' '+fmtDateVN(d).slice(0,5)+'</option>';
     }).join("");
     var canEdit = (uid === state.myId) || state.isAdmin || (amLead() && !!state.team[uid] && state.team[uid].subId === mySubId());
     $("plAddCard").style.display = canEdit ? "" : "none";
+    if ($("plUser")) $("plUser").value = uid;
     var box = $("plResult");
     box.innerHTML = '<div class="card"><div class="empty">Đang tải...</div></div>';
     var plan = { items: [] }, reports = [];
@@ -2932,7 +2949,7 @@ const provider = new GoogleAuthProvider();
 
   async function refreshPlanDash(){
     var ws = state.pdWeek, box = $("pdResult");
-    $("pdWeekLabel").textContent = "Tuần " + fmtDateVN(ws).slice(0,5) + " – " + fmtDateVN(addDaysIso(ws,6)).slice(0,5);
+    $("pdWeekLabel").textContent = "Tuần " + isoWeekNum(ws) + " (" + fmtDateVN(ws).slice(0,5) + " – " + fmtDateVN(addDaysIso(ws,6)).slice(0,5) + ")";
     box.innerHTML = '<div class="card"><div class="empty">Đang tải...</div></div>';
     await ensureAllUsers();
     var plans;
@@ -2940,6 +2957,9 @@ const provider = new GoogleAuthProvider();
     catch(e){ box.innerHTML = '<div class="card"><div class="empty">Lỗi tải: '+esc(e.message||"")+'</div></div>'; return; }
     var members = scopeMembers();
     var deadline = weekDeadlineMs(ws);
+    var wsPrev = addDaysIso(ws, -7);
+    var lblPrev = "Tuần " + isoWeekNum(wsPrev);
+    var lblThis = "Tuần " + isoWeekNum(ws);
     var rows = members.map(function(u){
       var p = plans[planDocId(u, ws)] || null;
       var t = p ? tsMs(p.firstSubmittedAt) : 0;
@@ -2959,17 +2979,17 @@ const provider = new GoogleAuthProvider();
       '<div class="stat"><div class="num">'+fmtNum(dtTarget)+'</div><div class="label">Mục tiêu Doanh số (tr)</div></div></div>' +
       '<div class="muted" style="margin-top:6px">Tuần trước (mục 1, người đã điền): SL '+fmtNum(slPrev)+' tấn · Doanh số '+fmtNum(dtPrev)+' tr</div></div>';
     var bySub = {};
-    rows.forEach(function(r){ (bySub[r.sub||"(chưa gán Sub)"] = bySub[r.sub||"(chưa gán Sub)"] || []).push(r); });
+    rows.forEach(function(r){ (bySub[r.sub||"(GDKD quản lý trực tiếp)"] = bySub[r.sub||"(GDKD quản lý trực tiếp)"] || []).push(r); });
     Object.keys(bySub).sort().forEach(function(subName){
       html += '<div class="card"><h3 style="margin:0 0 8px">'+esc(subName)+'</h3>' +
-        '<table class="cp-table"><thead><tr><th>Nhân viên</th><th>Trạng thái</th><th>SL mục tiêu/trước</th><th>DS mục tiêu/trước</th><th>Trọng tâm</th><th></th></tr></thead><tbody>' +
+        '<table class="cp-table"><thead><tr><th>Nhân viên</th><th>Trạng thái</th><th>SL TACN (tấn)<br><span class="muted" style="font-weight:400">'+esc(lblPrev)+' → '+esc(lblThis)+'</span></th><th>Doanh số (tr)<br><span class="muted" style="font-weight:400">'+esc(lblPrev)+' → '+esc(lblThis)+'</span></th><th>Trọng tâm</th><th></th></tr></thead><tbody>' +
         bySub[subName].map(function(r){
           var stChip = !r.sent ? '<span class="chip bad">Chưa gửi</span>' :
             (r.late ? '<span class="chip warn">Trễ '+esc(fmtMs(tsMs(r.p.firstSubmittedAt)).slice(0,5))+'</span>' : '<span class="chip ok">Đúng giờ</span>') +
             (r.p && r.p.status === "approved" ? ' <span class="chip ok">✅</span>' : r.p && r.p.status === "returned" ? ' <span class="chip warn">↩️</span>' : '');
           return '<tr><td class="nm">'+esc(r.name)+'</td><td>'+stChip+'</td>' +
-            '<td>'+fmtNum(r.tg.sl||0)+' / '+fmtNum(r.pw.sl||0)+'</td>' +
-            '<td>'+fmtNum(r.tg.dt||0)+' / '+fmtNum(r.pw.dt||0)+'</td>' +
+            '<td>'+fmtNum(r.pw.sl||0)+' → '+fmtNum(r.tg.sl||0)+'</td>' +
+            '<td>'+fmtNum(r.pw.dt||0)+' → '+fmtNum(r.tg.dt||0)+'</td>' +
             '<td>'+r.tasks+'/3</td>' +
             '<td><button class="btn secondary small pdGo" data-uid="'+esc(r.uid)+'">Xem →</button></td></tr>';
         }).join("") + '</tbody></table></div>';
@@ -3188,7 +3208,12 @@ const provider = new GoogleAuthProvider();
   function wirePlanStatus(p, uid, itemsCount){
     var ref = doc(db, "weekPlans", planDocId(uid, state.planWeek));
     if ($("plSendBtn")) $("plSendBtn").onclick = async function(){
-      if (!itemsCount){ showToast("Chưa có việc nào trong kế hoạch tuần.", true); return; }
+      if (!itemsCount){ showToast("Mục 5: chưa có việc nào trong lịch tuần.", true); return; }
+      var pCur = state.planData || p || {};
+      var tg = pCur.target || {}, pw = pCur.prevWeek || {}, tt = pCur.topTasks || [];
+      if (!(Number(tg.sl) > 0) && !(Number(tg.dt) > 0)){ showToast("Mục 2: chưa điền Mục tiêu tuần này (bấm Lưu mục 1-2-3).", true); return; }
+      if (!pw || (pw.sl == null && pw.dt == null)){ showToast("Mục 1: chưa điền Kết quả tuần trước (bấm Lưu mục 1-2-3).", true); return; }
+      if (!tt.length){ showToast("Mục 4: chưa có Hoạt động trọng tâm nào (bấm Lưu mục 4).", true); return; }
       var b = $("plSendBtn"); b.disabled = true;
       try {
         var upd = { status: "sent", submittedAt: serverTimestamp() };
